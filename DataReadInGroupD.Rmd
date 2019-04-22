@@ -1,0 +1,38 @@
+---
+output:
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+### STAT 240 - Data Read In - Group D
+
+```{r, include=FALSE}
+library(mosaic)
+library(readr)
+```
+
+Our project is about predicting cancer types based on RNA expressions.
+
+### Data Sources
+
+Our data source is the UCI Machine Learning Repo. The original data comes in as two files (samples with gene expressions and the labels for each sample). We combined these two datasets into one large set called "cancer.csv".
+
+### Workflow to Generate your Data Set
+
+The data set is was available as a .csv. The last column is called "Class" which is the label for each row.
+
+```{r}
+cancerData <- readRDS("cancer1.rda")
+cancerData2 <- readRDS("cancer2.rda")
+cancerData3 <- readRDS("cancer3.rda")
+cancerData4 <- readRDS("cancer4.rda")
+cancerData5 <- readRDS("cancer5.rda")
+
+groupddata <- rbind(cancerData, cancerData2, cancerData3, cancerData4, cancerData5)
+```
