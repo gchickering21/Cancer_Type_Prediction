@@ -1,0 +1,12 @@
+---
+title: "Analysis"
+author: "Group D"
+date: "4/22/2019"
+output: pdf_document
+---
+
+# Preliminary Analysis
+
+```{r}
+head(groupddata)
+```
