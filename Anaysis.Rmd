@@ -38,7 +38,23 @@ length(which(holmp == 0))
 myvars <- which(holmp == 0) + 1 #add one because MouseNum is at the start and was skipped
 
 reducedGroupData <- groupddata[, c(1, myvars, 20533)]
+
+ggplot(reducedGroupData) + geom_density(aes(x = gene_7421, color = Class))
+ggplot(reducedGroupData) + geom_density(aes(x = gene_203, color = Class))
+ggplot(reducedGroupData) + geom_density(aes(x = gene_5829, color = Class))
+ggplot(reducedGroupData) + geom_density(aes(x = gene_16259, color = Class))
+ggplot(reducedGroupData) + geom_density(aes(x = gene_19159, color = Class))
+
 ```
+
+
+ [1] "X1"         "gene_18"    "gene_203"   "gene_219"   "gene_220"   "gene_450"   "gene_1510"  "gene_1858"  "gene_2037" 
+[10] "gene_2288"  "gene_3439"  "gene_3461"  "gene_3523"  "gene_3737"  "gene_3921"  "gene_5829"  "gene_6733"  "gene_7116" 
+[19] "gene_7238"  "gene_7421"  "gene_7896"  "gene_7964"  "gene_7965"  "gene_9175"  "gene_9176"  "gene_9626"  "gene_11059"
+[28] "gene_11566" "gene_11903" "gene_12078" "gene_12808" "gene_12847" "gene_12848" "gene_12995" "gene_13210" "gene_13818"
+[37] "gene_13976" "gene_14114" "gene_14503" "gene_15894" "gene_15895" "gene_15896" "gene_15898" "gene_16130" "gene_16132"
+[46] "gene_16169" "gene_16246" "gene_16259" "gene_16337" "gene_16342" "gene_16358" "gene_16392" "gene_18135" "gene_19153"
+[55] "gene_19159" "gene_19236" "Class"  
 
 
 
