@@ -9,6 +9,43 @@ output: pdf_document
 
 The last column of the dataset (20533) is named "Class" - this is what we are trying to find
 
+Columns 2:20532 are genes
+
 ```{r}
 head(groupddata)
+unique(groupddata$Class)
 ```
+
+
+*** This takes about 10 minutes to run! ***
+
+```{r, cache = TRUE}
+pvals <- rep(1, 20530)
+
+for(i in 1:20530){
+  if(i %% 5000 == 0){
+    print(i)
+  }
+  s <- i + 1
+  pvals[i] <- anova(lm(groupddata[, s] ~ Class, data = groupddata))$"Pr(>F)"[1]
+} #find all ANOVA p-values
+
+#adjust for multiple testing
+holmp <- p.adjust(pvals, method = "bonf")
+length(which(holmp == 0))
+
+#which ones are < 0.05 (for example)
+myvars <- which(holmp == 0) + 1 #add one because MouseNum is at the start and was skipped
+
+reducedGroupData <- groupddata[, c(1, myvars, 20533)]
+```
+
+
+
+
+
+
+
+
+
+

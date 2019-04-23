@@ -34,5 +34,5 @@ cancerData3 <- readRDS("cancer3.rda")
 cancerData4 <- readRDS("cancer4.rda")
 cancerData5 <- readRDS("cancer5.rda")
 
-groupddata <- rbind(cancerData, cancerData2, cancerData3, cancerData4, cancerData5)
+groupddata <- data.frame(rbind(cancerData, cancerData2, cancerData3, cancerData4, cancerData5))
 ```
