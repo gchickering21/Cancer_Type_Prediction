@@ -57,11 +57,138 @@ ggplot(reducedGroupData) + geom_density(aes(x = gene_19159, color = Class))
 [55] "gene_19159" "gene_19236" "Class"  
 
 
+Clustering Analysis - 
+
+Hierachical 
+
+Single Linkage  - 
+
+```{r}
+gene.dist <- dist(reducedGroupData[, -c(1, 57)])
+```
+
+```{r}
+hcsingle <- hclust(gene.dist, method = "single")
+list(hcsingle)
+plot(hcsingle)
+```
+
+```{r}
+singleSol<- (cutree(hcsingle, k = 5))
+summary(as.factor(singleSol))
+```
+
+
+```{r}
+tally(singleSol ~ Class, format = "count", data = reducedGroupData)
+```
+
+
+```{r}
+singlePCA <- princomp(reducedGroupData[, -c(1,57)], cor = TRUE)
+plot(singlePCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Single Five cluster solution") #blank!
+text(singlePCA$scores[, 1:2], labels = singleSol, cex = 0.6)
+singlePCA$loadings[, 1:2]
+```
+Problems with single include that it tends to have long stringy clusters, as shown here. This is a classic example of chaining. However, single linkage is helpful in finding extreme outliers. 
+
+
+Complete linkage - 
+
+```{r}
+hccomp <- hclust(gene.dist, method = "complete")
+list(hccomp)
+plot(hccomp)
+```
+
+```{r}
+compSol<- (cutree(hccomp, k = 5))
+summary(as.factor(compSol))
+```
+
+```{r}
+tally(compSol ~ Class, format = "count", data = reducedGroupData)
+```
+
+Complete looks much better than single linkage. Clusters well spread out. Complete linkage gives clustrers of similar diameter. Hence, this solution looks better than the single linkage. 
+
+```{r}
+compPCA <- princomp(reducedGroupData[, -c(1,57)], cor = TRUE)
+plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") #blank!
+text(compPCA$scores[, 1:2], labels = compSol, cex = 0.6)
+compPCA$loadings[, 1:2]
+```
+
+Average Linkage - 
+```{r}
+hcavg <- hclust(gene.dist, method = "average")
+list(hcavg)
+plot(hcavg)
+```
+
+
+```{r}
+avgSol<- (cutree(hcavg, k = 5))
+summary(as.factor(avgSol))
+```
+
+
+```{r}
+tally(avgSol ~ Class, format = "count", data = reducedGroupData)
+```
+Compromise between average and single linkage. Cluster 3 is shockingly very small. 
+
+Wards Solution - 
+
+```{r}
+hcward <- hclust(gene.dist, method = "ward.D")
+list(hcward)
+plot(hcward)
+```
+
+```{r}
+wardSol<- (cutree(hcward, k = 5))
+summary(as.factor(wardSol))
+```
+Very similar to the complete limkage solution. Only differs in clusters 2 and 3 because this method also tends to produce equal sized clusters. (Joins based on smallest within cluster sum of squares.)
+
+```{r}
+tally(wardSol ~ Class, format = "count", data = reducedGroupData)
+```
+
+
+```{r}
+wardPCA <- princomp(reducedGroupData[, -c(1,57)], cor = TRUE)
+plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
+text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
+wardPCA$loadings[, 1:2]
+```
 
 
 
 
 
+K means - 
+
+```{r}
+wss <- rep(0, 12) #creates 8 copies of 0 to create an empty vector
+for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(1,57)]), centers = i)$withinss)}                   
+plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares")
+```
+
+We know that there are five classes, however looking for an elbow in the scree plot above we would like to see solutions based on 3 or 6 clusters. 
 
 
+```{r}
+Ksol1 <- kmeans(scale(reducedGroupData[, -c(1,57)]), centers = 5) #centers is the # of clusters
+#list(Ksol1) #so you can see what it gives you
+Ksol1$centers
+```
 
+```{r}
+tally(Ksol1$cluster ~ Class, data = reducedGroupData, format = "count")
+```
+
+```{r}
+tally(Ksol1$cluster ~ wardSol, format = "count")
+```3
