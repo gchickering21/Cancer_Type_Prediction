@@ -41,20 +41,14 @@ for(i in 1:20530){
   pvals[i] <- anova(lm(groupddata[, s] ~ Class, data = groupddata))$"Pr(>F)"[1]
 } #find all ANOVA p-values
 
-#adjust for multiple testing
+#adjust for multiple testing, using bonferonni to be as conservative as possible
 holmp <- p.adjust(pvals, method = "bonf")
 length(which(holmp == 0))
 
-#which ones are < 0.05 (for example)
-myvars <- which(holmp == 0) + 1 #add one because MouseNum is at the start and was skipped
+myvars <- which(holmp == 0) + 1 
 
 reducedGroupData <- data.frame(groupddata[, c(myvars, 20533)])
 reducedGroupData$Class <- as.factor(reducedGroupData$Class)
-
-# ggplot(reducedGroupData) + geom_density(aes(x = gene_7421, color = Class))
-# ggplot(reducedGroupData) + geom_density(aes(x = gene_203, color = Class))
-# ggplot(reducedGroupData) + geom_density(aes(x = gene_5829, color = Class))
-# ggplot(reducedGroupData) + geom_density(aes(x = gene_16259, color = Class))
 
 ```
 
@@ -99,7 +93,11 @@ tally(singleSol ~ Class, format = "count", data = reducedGroupData)
 
 
 ```{r}
+<<<<<<< HEAD
 singlePCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
+=======
+singlePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+>>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23
 plot(singlePCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Single Five cluster solution") #blank!
 text(singlePCA$scores[, 1:2], labels = singleSol, cex = 0.6)
 singlePCA$loadings[, 1:2]
@@ -127,8 +125,13 @@ tally(compSol ~ Class, format = "count", data = reducedGroupData)
 Complete looks much better than single linkage. Clusters well spread out. Complete linkage gives clustrers of similar diameter. Hence, this solution looks better than the single linkage. 
 
 ```{r}
+<<<<<<< HEAD
 compPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
 plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") 
+=======
+compPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") #blank!
+>>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23
 text(compPCA$scores[, 1:2], labels = compSol, cex = 0.6)
 compPCA$loadings[, 1:2]
 ```
@@ -172,8 +175,13 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 
 
 ```{r}
+<<<<<<< HEAD
 wardPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
 plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution")
+=======
+wardPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
+>>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23
 text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
 wardPCA$loadings[, 1:2]
 ```
@@ -214,6 +222,7 @@ tally(Ksol1$cluster ~ Class, data = reducedGroupData, format = "count")
 ```{r}
 tally(Ksol1$cluster ~ wardSol, format = "count")
 ```
+<<<<<<< HEAD
 
 Centroid - 
 
@@ -233,3 +242,5 @@ compare <- clValid(reducedGroupData[,-c(56)], 3:8, clMethods = c("agnes", "kmean
 ```
 
 
+=======
+>>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23
