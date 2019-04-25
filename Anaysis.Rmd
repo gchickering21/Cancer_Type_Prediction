@@ -8,6 +8,10 @@ output: pdf_document
 
 ```{r}
 library(randomForest) # for random forests and bagging
+library(cluster) #for access to daisy function
+library(lattice)
+library(flexclust)
+library(mosaic) 
 ```
 
 # Preliminary Analysis
@@ -74,7 +78,7 @@ Hierachical
 Single Linkage  - 
 
 ```{r}
-gene.dist <- dist(reducedGroupData[, -c(1, 57)])
+gene.dist <- dist(reducedGroupData[, -c(56)])
 ```
 
 ```{r}
@@ -95,7 +99,7 @@ tally(singleSol ~ Class, format = "count", data = reducedGroupData)
 
 
 ```{r}
-singlePCA <- princomp(reducedGroupData[, -c(1,57)], cor = TRUE)
+singlePCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
 plot(singlePCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Single Five cluster solution") #blank!
 text(singlePCA$scores[, 1:2], labels = singleSol, cex = 0.6)
 singlePCA$loadings[, 1:2]
@@ -123,8 +127,8 @@ tally(compSol ~ Class, format = "count", data = reducedGroupData)
 Complete looks much better than single linkage. Clusters well spread out. Complete linkage gives clustrers of similar diameter. Hence, this solution looks better than the single linkage. 
 
 ```{r}
-compPCA <- princomp(reducedGroupData[, -c(1,57)], cor = TRUE)
-plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") #blank!
+compPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
+plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") 
 text(compPCA$scores[, 1:2], labels = compSol, cex = 0.6)
 compPCA$loadings[, 1:2]
 ```
@@ -168,21 +172,29 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 
 
 ```{r}
-wardPCA <- princomp(reducedGroupData[, -c(1,57)], cor = TRUE)
-plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
+wardPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
+plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution")
 text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
 wardPCA$loadings[, 1:2]
 ```
 
 
+Hagnes - 
+
+
+```{r}
+hagnes <- agnes(reducedGroupData[, -c(56)], diss = FALSE, stand = TRUE, method = "ward")
+plot(hagnes, which = 2)
+plot(hagnes, which = 1) 
+```
 
 
 
 K means - 
 
 ```{r}
-wss <- rep(0, 12) #creates 8 copies of 0 to create an empty vector
-for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(1,57)]), centers = i)$withinss)}                   
+wss <- rep(0, 12) 
+for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(56)]), centers = i)$withinss)}                   
 plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares")
 ```
 
@@ -190,8 +202,8 @@ We know that there are five classes, however looking for an elbow in the scree p
 
 
 ```{r}
-Ksol1 <- kmeans(scale(reducedGroupData[, -c(1,57)]), centers = 5) #centers is the # of clusters
-#list(Ksol1) #so you can see what it gives you
+Ksol1 <- kmeans(scale(reducedGroupData[, -c(56)]), centers = 5) 
+#list(Ksol1)
 Ksol1$centers
 ```
 
@@ -201,4 +213,23 @@ tally(Ksol1$cluster ~ Class, data = reducedGroupData, format = "count")
 
 ```{r}
 tally(Ksol1$cluster ~ wardSol, format = "count")
-```3
+```
+
+Centroid - 
+
+```{r}
+set.seed(100)
+centroid <- cclust(scale(reducedGroupData[, -c(56)]), k = 5, save.data = TRUE)
+stripes(centroid, type = "first") 
+stripes(centroid, type = "second") 
+stripes(centroid, type = "all")
+```
+
+
+Cluster Validation - 
+
+```{r}
+compare <- clValid(reducedGroupData[,-c(56)], 3:8, clMethods = c("agnes", "kmeans", "diana", "pam", "clara"), metric = "euclidean", method = "complete")
+```
+
+
