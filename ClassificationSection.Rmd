@@ -15,10 +15,9 @@ library(gbm)
 library(e1071) #may need to be installed
 ```
 
+Our best method is going to end up being the random forest approach
 
-##figure out how to get rid of those warning signs
-
-##still need to go through and figure out best model for each method
+##Preliminary Analysis
 
 ```{r}
 dim(reducedGroupData)
@@ -28,14 +27,16 @@ tally(~ Class, data = reducedGroupData, format = "count")
 
 
 ```{r, eval = FALSE}
-sapply(1:55,function(x) favstats(~reducedGroupData[,x])) #favstats by variable fast
-#if you see something interesting, run favstats alone to make it easier to read
-cor(reducedGroupData[,-c(56)])
+set.seed(220)
+sampleData <- reducedGroupData[ , sample(ncol(reducedGroupData)-1, 25)]
+protein_matrix<- data.matrix(reducedGroupData)
+protein_heatmap <- heatmap(protein_matrix, Rowv=NA, Colv=NA, col = cm.colors(256), scale="column")
 ```
 
 
-Tree Method
+## Tree Method
 
+#Best tree we could create
 ```{r,fig.height = 7, eval=FALSE}
 g.control <- rpart.control(minsplit = 10, minbucket = 5, xval = 0)
 g.treeorig <- rpart(Class ~ ., data = reducedGroupData, method = "class", control = g.control)
@@ -44,7 +45,8 @@ text(g.treeorig, cex = 0.7)
 printcp(g.treeorig)
 #summary(g.treeorig) #only turn on if you really want it
 ```
-Tree #2
+
+## This is the same tree but running a jacknife cross validation approach
 ```{r, fig.height = 7, eval=TRUE}
 g.control2 <- rpart.control(minsplit = 10, minbucket = 5, xval = 801)
 g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , method = "class", control = g.control2)
@@ -54,6 +56,7 @@ plot(g.treeorig2)
 text(g.treeorig2, cex = 0.7)
 ```
 
+#Same tree but running a 10 fold cross validation
 ```{r, fig.height = 7, eval=TRUE}
 g.control2 <- rpart.control(minsplit = 10, minbucket = 5, xval = 10)
 g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , method = "class", control = g.control2)
@@ -64,15 +67,11 @@ text(g.treeorig2, cex = 0.7)
 ```
 
 
-##code if we want to prune the trees
-```{r, eval=FALSE}
-g.prunetree <- prune.rpart(g.treeorig2, cp = 0.014493, parms = list(split = "information"), control = g.control2)
-printcp(g.prunetree)
-plot(g.prunetree)
-text(g.prunetree)
-```
 
-#Random Forest
+#Random Forest Section
+
+-This ends up being our best method based on the TER and AER
+
 ```{r}
 set.seed(240)
 cancerRandomForest <- randomForest(Class ~ ., data = reducedGroupData, mtry = 10, ntree = 100, importance = T, proximity = T)
@@ -83,7 +82,7 @@ table(reducedGroupData$Class, predict(cancerRandomForest, groupddata))
 
 ##Boosting Procedure
 
-##Create Holdout Approach
+##Create Holdout Samples from Data Set
 ```{r}
 #setup
 set.seed(240)
@@ -93,7 +92,21 @@ group_test <- reducedGroupData %>% setdiff(group_train)
 tally(~Class, data=group_test)
 ```
 
+##This is to get AER
+```{r}
+set.seed(240)
+group.boost2 <- gbm(Class ~ ., data = group_train, distribution = "multinomial", 
+                   n.trees = 5000, interaction.depth = 3, shrinkage = 0.1)
+summary(group.boost)
+boost_estimate2 <- predict(group.boost, newdata = group_train, 
+                         n.trees = 5000, type = "response")
+pred_group2 <- apply(boost_estimate2, 1, which.max)
+tally(~ pred_group2)
+table(group_train$Class, pred_group2)
+```
 
+
+##To get TER
 ```{r}
 set.seed(240)
 group.boost <- gbm(Class ~ ., data = group_train, distribution = "multinomial", 
@@ -109,7 +122,11 @@ table(group_test$Class, pred_group)
 round(relative.influence(group.boost, n.trees=5000), 2 )
 ```
 
+
+
 #KNN approach
+
+##To get AER
 ```{r}
 ##This is to get AER
 g.knn <- knn(group_train[,-56], group_train[,-56], group_train$Class, k = 4, prob = T)
@@ -119,7 +136,9 @@ tempsum <- as.numeric(sum(as.matrix(temptable)) - sum(diag(as.matrix(temptable))
 tempsum/(sum(as.matrix(temptable)))
 
 ```
-##Might need to check this over
+
+##To get TER 
+
 ```{r}
 ##This is to get TER
 g.knn <- knn(group_train[,-56], group_test[,-56], group_train$Class, k = 4, prob = T)
@@ -129,3 +148,7 @@ tempsum <- as.numeric(sum(as.matrix(temptable)) - sum(diag(as.matrix(temptable))
 tempsum/(sum(as.matrix(temptable)))
 
 ```
+
+
+
+
