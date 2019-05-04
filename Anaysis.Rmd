@@ -93,11 +93,7 @@ tally(singleSol ~ Class, format = "count", data = reducedGroupData)
 
 
 ```{r}
-<<<<<<< HEAD
 singlePCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
-=======
-singlePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
->>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23
 plot(singlePCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Single Five cluster solution") #blank!
 text(singlePCA$scores[, 1:2], labels = singleSol, cex = 0.6)
 singlePCA$loadings[, 1:2]
@@ -125,16 +121,20 @@ tally(compSol ~ Class, format = "count", data = reducedGroupData)
 Complete looks much better than single linkage. Clusters well spread out. Complete linkage gives clustrers of similar diameter. Hence, this solution looks better than the single linkage. 
 
 ```{r}
-<<<<<<< HEAD
 compPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
 plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") 
-=======
-compPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
-plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") #blank!
->>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23
 text(compPCA$scores[, 1:2], labels = compSol, cex = 0.6)
 compPCA$loadings[, 1:2]
 ```
+
+
+
+```{r}
+compsil <- silhouette(compSol, gene.dist)
+summary(compsil)
+plot(compsil)
+```
+
 
 Average Linkage - 
 ```{r}
@@ -167,7 +167,6 @@ plot(hcward)
 wardSol<- (cutree(hcward, k = 5))
 summary(as.factor(wardSol))
 ```
-Very similar to the complete limkage solution. Only differs in clusters 2 and 3 because this method also tends to produce equal sized clusters. (Joins based on smallest within cluster sum of squares.)
 
 ```{r}
 tally(wardSol ~ Class, format = "count", data = reducedGroupData)
@@ -175,15 +174,15 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 
 
 ```{r}
-<<<<<<< HEAD
 wardPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
-plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution")
-=======
-wardPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
->>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23
 text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
 wardPCA$loadings[, 1:2]
+```
+```{r}
+wardsil <- silhouette(wardSol, gene.dist)
+summary(wardsil)
+plot(wardsil)
 ```
 
 
@@ -191,7 +190,7 @@ Hagnes -
 
 
 ```{r}
-hagnes <- agnes(reducedGroupData[, -c(56)], diss = FALSE, stand = TRUE, method = "ward")
+hagnes <- agnes(reducedGroupData[, -c(56)], diss = FALSE, stand = TRUE)
 plot(hagnes, which = 2)
 plot(hagnes, which = 1) 
 ```
@@ -201,12 +200,13 @@ plot(hagnes, which = 1)
 K means - 
 
 ```{r}
+set.seed(9)
 wss <- rep(0, 12) 
 for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(56)]), centers = i)$withinss)}                   
 plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares")
 ```
 
-We know that there are five classes, however looking for an elbow in the scree plot above we would like to see solutions based on 3 or 6 clusters. 
+We know that there are five classes, however looking for an elbow in the scree plot above we would like to see solutions based 5 clusters as expected.  
 
 
 ```{r}
@@ -222,6 +222,12 @@ tally(Ksol1$cluster ~ Class, data = reducedGroupData, format = "count")
 ```{r}
 tally(Ksol1$cluster ~ wardSol, format = "count")
 ```
+
+```{r}
+kmeanssilh <- silhouette(Ksol1$cluster, gene.dist)
+summary(kmeanssilh)
+plot(kmeanssilh)
+```
 <<<<<<< HEAD
 
 Centroid - 
@@ -234,12 +240,18 @@ stripes(centroid, type = "second")
 stripes(centroid, type = "all")
 ```
 
+```{r}
+tally(centroid ~ Class, data = reducedGroupData, format = "count")
+```
 
-Cluster Validation - 
+
+Comparing Clustering and Classification - 
+
 
 ```{r}
-compare <- clValid(reducedGroupData[,-c(56)], 3:8, clMethods = c("agnes", "kmeans", "diana", "pam", "clara"), metric = "euclidean", method = "complete")
+tally(wardSol ~ cancerRandomForest$predicted, format = "count")
 ```
+
 
 
 =======
