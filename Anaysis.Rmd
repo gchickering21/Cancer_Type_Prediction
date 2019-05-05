@@ -23,12 +23,26 @@ Columns 2:20532 are genes
 ```{r}
 head(groupddata)
 unique(groupddata$Class)
+tally(~ Class, data = groupddata)
 ```
 
+### Distribution analysis of gene expression
 
-*** This takes about 10 minutes to run! ***
+```{r, message=FALSE}
+set.seed(17)
+sampleData <- groupddata[ , c(sample(ncol(groupddata), 5),20533)]
+
+#checking the overall distributions of the sampled genes
+favstats(gene_3182 ~ Class, data = sampleData) # checking the distribution of one of the genes by class
+
+ggpairs(sampleData[,-c(6)], mapping=ggplot2::aes(colour = sampleData$Class))
+```
+
+### Feature Reduction
 
 Working through the dataset to reduce the number of predictors that we are going to use for further analyses.
+
+** This takes about 10 minutes to run! **
 
 ```{r, cache = TRUE}
 pvals <- rep(1, 20530)
@@ -94,6 +108,10 @@ tally(singleSol ~ Class, format = "count", data = reducedGroupData)
 
 ```{r}
 singlePCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
+<<<<<<< HEAD
+=======
+singlePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+>>>>>>> 2319fc6df64b7fbe1a0b8721c95ff5f3c7a1a56b
 plot(singlePCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Single Five cluster solution") #blank!
 text(singlePCA$scores[, 1:2], labels = singleSol, cex = 0.6)
 singlePCA$loadings[, 1:2]
@@ -120,9 +138,11 @@ tally(compSol ~ Class, format = "count", data = reducedGroupData)
 
 Complete looks much better than single linkage. Clusters well spread out. Complete linkage gives clustrers of similar diameter. Hence, this solution looks better than the single linkage. 
 
+
+
 ```{r}
-compPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
-plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") 
+compPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") #blank!
 text(compPCA$scores[, 1:2], labels = compSol, cex = 0.6)
 compPCA$loadings[, 1:2]
 ```
@@ -175,10 +195,16 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 
 ```{r}
 wardPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
+<<<<<<< HEAD
+=======
+plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution")
+wardPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+>>>>>>> 2319fc6df64b7fbe1a0b8721c95ff5f3c7a1a56b
 plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
 text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
 wardPCA$loadings[, 1:2]
 ```
+
 ```{r}
 wardsil <- silhouette(wardSol, gene.dist)
 summary(wardsil)
@@ -228,6 +254,30 @@ kmeanssilh <- silhouette(Ksol1$cluster, gene.dist)
 summary(kmeanssilh)
 plot(kmeanssilh)
 ```
+
+
+
+```{r}
+Ksol2 <- kmeans(scale(reducedGroupData[, -c(56)]), centers = 3) 
+#list(Ksol1)
+Ksol2$centers
+```
+
+
+```{r}
+tally(Ksol2$cluster ~ Class, data = reducedGroupData, format = "count")
+```
+
+```{r}
+tally(Ksol2$cluster ~ wardSol, format = "count")
+```
+
+```{r}
+kmeanssilh2 <- silhouette(Ksol2$cluster, gene.dist)
+summary(kmeanssilh2)
+plot(kmeanssilh2)
+```
+
 <<<<<<< HEAD
 
 Centroid - 
