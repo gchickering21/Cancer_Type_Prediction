@@ -1,0 +1,2 @@
+"0","compPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)"
+"0","plot(compPCA$scores[, 1:2], type = ""n"", xlab = ""PC1"", ylab = ""PC2"", main = ""Complete Linkage's Five cluster solution"") #blank!"

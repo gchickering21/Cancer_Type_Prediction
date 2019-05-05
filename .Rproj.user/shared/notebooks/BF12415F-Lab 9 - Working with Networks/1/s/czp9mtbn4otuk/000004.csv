@@ -1,0 +1,2 @@
+"0","g2 <- watts.strogatz.game(1, 20, 3, 0.15)"
+"0","plot(g2) #small-world"

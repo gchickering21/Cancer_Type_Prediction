@@ -1,0 +1,4 @@
+"0","set.seed(17)"
+"0","sampleData <- groupddata[ , c(sample(ncol(groupddata), 5),20533)]"
+"0","#checking the overall distributions of the sampled genes"
+"0","favstats(gene_3182 ~ Class, data = sampleData) # checking the distribution of one of the genes by class"

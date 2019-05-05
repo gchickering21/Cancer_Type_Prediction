@@ -1,0 +1,3 @@
+"0","set.seed(100)"
+"0","centroid <- cclust(scale(reducedGroupData[, -c(56)]), k = 5, save.data = TRUE)"
+"0","stripes(centroid, type = ""first"") "

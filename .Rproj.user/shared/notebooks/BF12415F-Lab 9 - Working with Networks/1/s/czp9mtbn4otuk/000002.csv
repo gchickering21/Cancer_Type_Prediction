@@ -1,0 +1,3 @@
+"0","set.seed(240) #CHANGE the SEED"
+"0","g <- erdos.renyi.game(20, 0.15, type = ""gnp"")"
+"0","plot(g) #random"

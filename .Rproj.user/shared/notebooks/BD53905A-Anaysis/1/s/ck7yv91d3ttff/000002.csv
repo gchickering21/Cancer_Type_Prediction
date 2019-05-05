@@ -1,0 +1,4 @@
+"0","set.seed(9)"
+"0","wss <- rep(0, 12) "
+"0","for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(56)]), centers = i)$withinss)}                   "
+"0","plot(1:12, wss, type = ""b"", xlab = ""Number of groups"", ylab = ""Within groups sum of squares"")"

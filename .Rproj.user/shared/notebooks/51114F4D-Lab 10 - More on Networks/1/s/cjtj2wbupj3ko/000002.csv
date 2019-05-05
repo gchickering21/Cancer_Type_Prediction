@@ -1,0 +1,2 @@
+"0","hcward <- hclust(crab.dist.scale, method = ""ward.D"") "
+"0","plot(hcward, cex = 0.7)"

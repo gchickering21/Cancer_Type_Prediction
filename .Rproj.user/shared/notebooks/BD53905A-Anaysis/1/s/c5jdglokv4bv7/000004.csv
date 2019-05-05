@@ -1,0 +1,4 @@
+"0","tally(centroid ~ Class, data = reducedGroupData, format = ""count"")"
+"2","Error in as.data.frame.default(x[[i]], optional = TRUE) : 
+  cannot coerce class ‘structure(""kcca"", package = ""flexclust"")’ to a data.frame
+"

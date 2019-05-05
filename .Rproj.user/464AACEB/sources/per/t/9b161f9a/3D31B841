@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556030135277.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "354873273",
+    "id" : "3D31B841",
+    "lastKnownWriteTime" : 1555969547,
+    "last_content_update" : 1556157271353,
+    "path" : "~/Network Analysis - Intro Examples.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "92,37",
+        "scrollLine" : "80"
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

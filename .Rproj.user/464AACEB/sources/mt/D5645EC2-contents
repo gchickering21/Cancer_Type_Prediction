@@ -1,0 +1,187 @@
+---
+title: "Stat 240 - Lab 5 - Clustering Practice - Example Solution"
+author: "A.S. Wagaman"
+output:
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+
+
+```{r, include = FALSE} 
+library(mosaic) 
+library(cluster) #for access to daisy function
+library(lattice)
+library(flexclust)
+#library(mclust) #if you want to try model-based, probably need to install this package
+```
+
+
+We will examine clustering solutions using the King County, Washington (State) house sales data set, which I am re-hosting from Kaggle. The Kaggle reference is: https://www.kaggle.com/swathiachath/kc-housesales-data/version/1
+
+```{r}
+kchouse <- read.csv("https://awagaman.people.amherst.edu/stat495/kc_house_data.csv", header = T)
+```
+
+A data dictionary taken from Kaggle is provided for your use (separate file). 
+
+
+In the assigned groups, your goal is to find a clustering solution (or solutions) to help real estate agents understand if there are natural grouping of homes in King County based on this data set. 
+
+Some suggestions are provided to guide you in the analysis.
+
+Assuming we have time, I'd like the groups to share what clusters they found (based on what data/variables were used), what algorithm, etc. 
+
+### Suggestions
+
+* Look at the data dictionary to understand the variables.
+* There are a LOT of observations. You might want to take a subsample - and that could be done in many ways. Randomly, based on some other variables, etc. 
+* Select the variables you want to use to start - you can change this!
+* Determine how you want to use latitude and longitude. They could be included as variables in the clustering OR used to make a scatterplot (like a map but without the map structure) where you could visualize clustering solutions. 
+* Figure out if you want to include zipcode, and if so, how. Does a numeric distance between zipcodes make sense? 
+* Expect to try out several algorithms.
+* Try out several numbers of clusters for each algorithm.
+* Explore different visuals to present your solutions (you might end up running PCA to help!).
+* Remember to use favstats by cluster label or some other way to explore cluster differences. 
+* The clustering examples.Rmd has a lot of useful code. 
+
+
+
+### Example Solution
+
+There is no single correct solution here. The idea was to explore and look for clusters.
+
+#### Setup
+
+```{r}
+glimpse(kchouse)
+```
+
+Selecting variables to work with:
+
+```{r}
+kcsub <- select(kchouse, price, bedrooms, bathrooms, sqft_living, sqft_lot, lat, long)
+```
+
+We just want to keep lat/long for plotting later. 
+
+Subsample due to large number of observations:
+
+```{r}
+set.seed(240)
+kcsub2 <- sample(kcsub, 1000, orig.ids = FALSE)
+```
+
+Set up distance matrix for HC:
+
+```{r}
+kc.dist <- dist(scale(kcsub2[, -c(6:7)])) #scale because of price values
+```
+
+#### HC
+
+
+```{r}
+hcsingle <- hclust(kc.dist, method = "single") 
+list(hcsingle) # reminds you of properties of the solution, if desired
+plot(hcsingle, cex = 0.7)
+```
+
+
+Seem to be a few unusual houses we could look at later.
+
+```{r}
+kcsub[c(7763, 15857),] #price and lot sizes are a bit unusual, oh and 33 bedrooms? really?
+```
+
+```{r}
+hcward <- hclust(kc.dist, method = "ward.D") #could swap to try complete, etc. 
+plot(hcward, cex = 0.7)
+wardSol <- (cutree(hcward, k= 3)) #cluster labels are numeric, k= # clusters, k=4 also reasonable
+summary(as.factor(wardSol)) #as factor to get table
+```
+
+How are these clusters different?
+
+```{r}
+favstats(price ~ wardSol, data = kcsub2)
+favstats(bedrooms ~ wardSol, data = kcsub2)
+favstats(bathrooms ~ wardSol, data = kcsub2)
+favstats(sqft_living ~ wardSol, data = kcsub2)
+favstats(sqft_lot ~ wardSol, data = kcsub2)
+```
+
+The clusters are basically three different sizes/prices of homes. How does this look spatially?
+
+```{r}
+gf_point(lat ~ long, data = kcsub2, color = wardSol)
+```
+
+You could overlay this on a map of the area too.
+
+#### K-means
+
+First, we look at WSS values to assess good values for k.
+
+```{r}
+wss <- rep(0, 12) #creates 12 copies of 0 to create an empty vector
+for(i in 1:12){wss[i] <- sum(kmeans(scale(kcsub2[, -c(6,7)]), centers = i)$withinss)}                   
+plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares")
+```
+
+5? or 9 clusters is actually a pretty good elbow. Interestingly, the WGSS goes UP from 7 to 8 clusters. 
+
+```{r}
+Ksol1 <- kmeans(scale(kcsub2[, -c(6,7)]), centers = 5) #centers is the # of clusters
+Ksol1$centers
+```
+
+Overlap?
+
+```{r}
+tally(Ksol1$cluster ~ wardSol, format = "count")
+```
+
+Both seem to be recovering price/size levels.
+
+```{r}
+kcPCA <- princomp(kcsub2[, -c(6,7)], cor = TRUE)
+plot(kcPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Cluster solution") #blank!
+text(kcPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
+kcPCA$loadings[, 1:2]
+summary(kcPCA)
+```
+
+The PC representation with 2 components can get us 70% variability. So, it's a decent projection to examine. The clusters are fairly well separated in it. You could do this with ggbiplot and variable axes showing to see how the variables are involved. 
+
+```{r}
+plot(kcPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "K-means Cluster solution") #blank!
+text(kcPCA$scores[, 1:2], labels = Ksol1$cluster, cex = 0.6)
+```
+
+Some validation checking:
+
+```{r}
+k5 <- cclust(scale(kcsub2[, -c(6,7)]), k = 5, save.data = TRUE) 
+stripes(k5, type = "second") #to its centroid and second-closest centroid
+```
+
+The solution doesn't look as strong as others we've seen.
+
+```{r}
+kmeanssil <- silhouette(Ksol1$cluster, kc.dist)
+summary(kmeanssil)
+```
+
+```{r}
+wardsil <- silhouette(wardSol, kc.dist)
+summary(wardsil)
+```
+
+

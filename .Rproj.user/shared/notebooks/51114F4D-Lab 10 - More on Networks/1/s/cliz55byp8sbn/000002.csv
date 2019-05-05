@@ -1,0 +1,4 @@
+"0","library(mosaic) #load required/useful packages"
+"0","options(digits = 3) # sets so output is only 3 digits"
+"0","library(sand)"
+"0","library(igraph)"

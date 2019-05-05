@@ -1,0 +1,6 @@
+"0","cancerData <- readRDS(""cancer1.rda"")"
+"0","cancerData2 <- readRDS(""cancer2.rda"")"
+"0","cancerData3 <- readRDS(""cancer3.rda"")"
+"0","cancerData4 <- readRDS(""cancer4.rda"")"
+"0","cancerData5 <- readRDS(""cancer5.rda"")"
+"0","groupddata <- data.frame(rbind(cancerData, cancerData2, cancerData3, cancerData4, cancerData5))"

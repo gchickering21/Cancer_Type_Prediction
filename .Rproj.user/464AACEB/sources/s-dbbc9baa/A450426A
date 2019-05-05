@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556479325132.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "A450426A",
+    "lastKnownWriteTime" : 1551195374,
+    "last_content_update" : 1551195374,
+    "path" : "~/Clustering Examples.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "184,32",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 8,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

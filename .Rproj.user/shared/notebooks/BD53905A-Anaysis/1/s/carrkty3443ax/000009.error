@@ -1,0 +1,1 @@
+{"frames":[],"message":"Error in ggpairs(sampleData[, -c(6)], mapping = ggplot2::aes(colour = sampleData$Class)) : \n  could not find function \"ggpairs\"\n"}

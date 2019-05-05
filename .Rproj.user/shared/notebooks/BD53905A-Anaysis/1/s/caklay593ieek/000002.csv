@@ -1,0 +1,20 @@
+"0","library(randomForest) # for random forests and bagging"
+"0","library(cluster) #for access to daisy function"
+"0","library(lattice)"
+"0","library(flexclust)"
+"2","Loading required package: grid
+"
+"2","Loading required package: modeltools
+"
+"2","Loading required package: stats4
+"
+"2","
+Attaching package: ‘modeltools’
+
+"
+"2","The following object is masked from ‘package:igraph’:
+
+    clusters
+
+"
+"0","library(mosaic) "

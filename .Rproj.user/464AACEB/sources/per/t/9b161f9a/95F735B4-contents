@@ -1,0 +1,140 @@
+---
+title: "Stat 240 - Lab 10 - More on Networks"
+author: "A.S. Wagaman"
+output:
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+
+
+```{r, include = FALSE} 
+library(mosaic) #load required/useful packages
+options(digits = 3) # sets so output is only 3 digits
+library(sand)
+library(igraph)
+```
+
+Previously we saw how to get a lot of descriptive statistics, etc. on graphs and implemented some clustering algorithms. Now, we take a look at some specific examples, and how this connects back to our previous material on clustering.
+
+### Clustering
+
+In our clustering examples, we looked for clusters of crabs (and cereals). This example will show you that you can create network representations of data sets if you have a distance measure.
+
+```{r}
+crabs <- read.table("https://awagaman.people.amherst.edu/stat240/crabs.txt", h = T)
+crab.dist.scale <- dist(scale(crabs[, -c(1:2)]))
+```
+
+Remember, we have data from Campbell & Mahon (1974). This is data on the morphology of rock crabs of genus Leptograpsus.  There are 50 specimens of each sex of each of two color forms. The variables are:   
+sp  `species', coded B (blue form) or O (orange form)  
+sex	coded M or F  
+FL	frontal lip of carapace (mm)  
+RW	rear width of carapace (mm)  
+CL	length along the midline of carapace (mm)  
+CW	maximum width of carapace (mm)  
+BD	body depth (mm)  
+
+#### Make an adjacency matrix
+
+```{r}
+distmat <- as.matrix(crab.dist.scale)
+#choose a cutoff distance
+
+myadj <- matrix(as.numeric(distmat < 2), nrow = 200) #chose 2 as a distance
+diag(myadj) <- 0 #reset diag to 0 so no loops
+```
+
+Now we create a graph from our adjacency matrix.
+
+```{r}
+g <- graph_from_adjacency_matrix(myadj, mode = "undirected")
+plot(g)
+```
+
+#### Analysis
+
+Now you can treat the crabs dataset as a network - crabs with distances < 2 are connected. 
+
+Previously, we ran a ward's solution.
+
+```{r}
+hcward <- hclust(crab.dist.scale, method = "ward.D") 
+plot(hcward, cex = 0.7)
+wardSol <- (cutree(hcward, k= 5)) #cluster labels are numeric, k= # clusters, k=3 also reasonable
+summary(as.factor(wardSol)) #as factor to get table
+```
+
+How does that compare if we run hierarchical clustering on our crabs network?
+
+```{r}
+fg1 <- fastgreedy.community(g)
+length(fg1)
+sizes(fg1)
+membership(fg1) #this is the clustering vector you are used to
+plot(fg1, g) #how to plot the solution
+tally(fg1$membership ~ wardSol)
+```
+
+What do you notice?
+
+
+Compare a k-means solution (chosen appropriately) to a spectral partitioning solution. 
+
+```{r}
+
+```
+
+
+### Social Networks
+
+What can we use networks to understand? Well, common examples abound. Social networks, for example, are extremely common. What can we learn here? I found an interesting example of extracting social networks from movies.
+
+Steer your browsers to this [blog.] (http://evelinag.com/blog/2015/12-15-star-wars-social-network/).
+
+What do you learn from the visualizations? How are the graphs decorated? What centrality measures are used to discuss the graphs? What do you learn from the centrality analysis?
+
+
+
+What about other real-life social networks? We'll tackle working with one in the homework. 
+
+
+### Protein-Protein Interaction Networks
+
+```{r}
+data("yeast")
+summary(yeast)
+```
+
+Practice your network analysis skills on this protein-protein interaction network in yeast from the textbook.
+
+Try plotting the graph. What do you find?
+
+
+
+
+Provide basic descriptive statistics - vertices, edges, and degree distribution. What do you learn?
+
+
+
+What vertices are the most central? According to what metric? Is there agreement across measures?
+
+
+
+How clustered is the graph (transitivity)? Do local measures vary much from the global measure?
+
+
+
+
+How many communities do you find if you engage in community detection? What methods did you try? Do they agree? How do their membership vectors compare?
+
+
+
+
+

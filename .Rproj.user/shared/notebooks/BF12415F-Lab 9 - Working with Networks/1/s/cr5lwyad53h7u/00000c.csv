@@ -1,0 +1,2 @@
+"0","mylayout2 <- layout_(g2, as_tree())"
+"0","plot(g2, layout = mylayout2)"

@@ -1,0 +1,2 @@
+"0","crabs <- read.table(""https://awagaman.people.amherst.edu/stat240/crabs.txt"", h = T)"
+"0","crab.dist.scale <- dist(scale(crabs[, -c(1:2)]))"

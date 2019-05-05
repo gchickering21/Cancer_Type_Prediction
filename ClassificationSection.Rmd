@@ -107,6 +107,10 @@ table(group_test$Class, pred_group)
 ```
 ```{r}
 round(relative.influence(group.boost, n.trees=5000), 2 )
+
+# density distribution of most important predictor
+gf_dens( ~ gene_7964, color = ~ Class, data = reducedGroupData)  %>%
+  gf_labs(title = "Density Distribution of Most Influential Gene by Class")
 ```
 
 #KNN approach

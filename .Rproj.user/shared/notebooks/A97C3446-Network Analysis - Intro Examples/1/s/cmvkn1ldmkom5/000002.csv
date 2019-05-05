@@ -1,0 +1,3 @@
+"0","A <- get.adjacency(g, sparse=FALSE)"
+"0","g2 <- network::as.network.matrix(A)"
+"0","sna::gplot.target(g2, evcent(g2), main=""Eigenvector"", circ.lab = FALSE, circ.col=""skyblue"", usearrows = FALSE, edge.col = ""darkgray"")"

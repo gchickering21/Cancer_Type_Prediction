@@ -1,0 +1,4 @@
+"0","compare <- clValid(crabs[,-c(1:2)], 3:8, clMethods = c(""agnes"", ""kmeans"", ""diana"", ""pam"", ""clara""), metric = ""euclidean"", method = ""complete"")"
+"2","Error in clValid(crabs[, -c(1:2)], 3:8, clMethods = c(""agnes"", ""kmeans"",  : 
+  could not find function ""clValid""
+"

@@ -1,0 +1,2 @@
+"0","g <- graph_from_adjacency_matrix(myadj, mode = ""undirected"")"
+"0","plot(g)"

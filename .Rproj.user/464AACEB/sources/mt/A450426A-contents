@@ -1,0 +1,545 @@
+---
+title: "Stat 240 - Clustering Examples"
+author: "A.S. Wagaman"
+output:
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+
+The cluster library is the main one we need for clustering. Some others are used here to show you some other features. 
+
+```{r, include=FALSE} 
+library(mosaic) 
+library(cluster) #for access to daisy function
+library(lattice)
+library(flexclust)
+```
+
+# Clustering Examples
+
+There are two examples here, one on cereals and one on crabs.  
+
+## First Example - Cereals
+
+```{r}
+cereals <- read.table("https://awagaman.people.amherst.edu/stat240/cereals.txt", h = T)
+```
+
+The data is cereal brands, manufacturers (also group - same info, but group is numeric, and manufacturer is categorical), and nutrition information (calories, protein, fat, sodium, fiber, carbs, sugar, potassium) per serving.
+
+```{r}
+summary(cereals)
+```
+
+### Hierarchical Clustering
+
+If we want to look for cereal groups via hierarchical clustering, we need to construct a distance matrix. Distances are constructed with the *dist* function, and you need to choose whether you compute them on scaled or unscaled variables (standardize or not). 
+
+```{r}
+cer.dist <- dist(cereals[, -c(1:2, 11)]) #could also use select to make the new data set to use
+#this is unstandardized! What implications might that have for the solution?
+```
+
+Now we look at how hierarchical clustering is applied. The relevant function is *hclust*. 
+
+```{r}
+hcsingle <- hclust(cer.dist, method = "single") 
+list(hcsingle) # reminds you of properties of the solution, if desired
+```
+
+This creates the solution, and we can look at the dendrogram as:
+
+```{r}
+plot(hcsingle)
+```
+
+The observation numbers show up as the labels. If you want those to be the cereals instead, try:
+
+```{r}
+plot(hcsingle, labels = cereals$brand, cex = 0.7) #cex adjusts size of label
+```
+
+The options for hclust in terms of linkages are provided in the help under options for method. The following options are listed: "ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median" or "centroid".
+
+In order to obtain cluster labels, we need to *cut* our dendrograms.
+
+```{r}
+singleSol <- (cutree(hcsingle, k = 5)) #cluster labels are numeric, k= # clusters
+summary(as.factor(singleSol)) #as factor to get table
+```
+
+To learn more details about the clusters you found, consider this solution and its details below:
+
+```{r}
+hcward <- hclust(cer.dist, method = "ward.D") 
+plot(hcward, labels = cereals$brand, cex = 0.7) #cex adjusts size of label
+
+wardSol <- (cutree(hcward, k = 3)) #cluster labels are numeric, k= # clusters
+favstats(calories ~ wardSol, data = cereals) #can choose any variable
+bwplot(calories ~ as.factor(wardSol), data = cereals)
+```
+
+We see basically no difference in caloric content across our clusters. What if we look at sodium?
+
+```{r}
+favstats(sodium ~ wardSol, data = cereals) 
+bwplot(sodium ~ as.factor(wardSol), data = cereals)
+```
+
+We can view the solution in the PC space (say 2-D) to see how well-separated the clusters are in that space. Because we used an unstandardized distance, I will run the PCA on the covariance matrix. The plot constructed is via base R for these labels. I'm sure it can be done in ggplot2, and will try to update this as I can. 
+
+```{r}
+cerPCA <- princomp(cereals[, -c(1, 2, 11)], cor = FALSE)
+
+plot(cerPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Three cluster solution") #blank!
+text(cerPCA$scores[, 1:2], labels = wardSol, cex = 0.6) #add the text
+```
+
+*Reminder* We used an unscaled distance matrix here. The clustering solution is largely driven by potassium and sodium values as a result. To really incorporate all the variables into the solution, we need to standardize the variables before computing the distance. 
+
+### K-means Methods
+
+For k-means, you don't need to compute the distance matrix yourself. You should feed the function the data set to operate on. Here is an example k-means performed on the scaled cereals data:
+
+```{r}
+Ksol1 <- kmeans(scale(cereals[, -c(1, 2, 11)]), centers = 4) #centers is the # of clusters desired
+list(Ksol1) #so you can see what it gives you
+```
+
+The list option provides us with lots of information. You can pull out the cluster means as:
+
+```{r}
+Ksol1$centers
+```
+
+We can also get the clustering vector (with the cluster labels) as:
+
+```{r}
+Ksol1$cluster
+```
+
+In order to determine if we have chosen a "good" value of the number of clusters, we can look at the within cluster sum of squares for this solution and a few other options for k, the number of clusters. This runs the solution from 1 to 8 clusters and pulls the within group sum of squares from each. 
+
+```{r}
+n <- nrow(cereals) #number of observations
+wss <- rep(0, 8) #creates 8 copies of 0 to create an empty vector
+for(i in 1:8){wss[i] <- sum(kmeans(scale(cereals[, -c(1, 2, 11)]), centers = i)$withinss)}                   
+plot(1:8, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares")
+```
+
+We look for elbows in the plot - here there are elbows at 4 and 6. So perhaps 4 is a decent value. Maybe? This is subjective. 
+
+With four clusters, we should see if there is any relationship with cereal manufacturer.
+
+```{r}
+tally(Ksol1$cluster ~ manufacturer, data = cereals, format = "count")
+```
+
+There does not appear to be a strong relationship here. 
+
+We can compare clustering solutions with similar tables. How do the K-means and Ward's solutions overlap? Remember that cluster numbers might not agree, but you could see for example, if K-means cluster 2 was Ward's cluster 1 based on the table generated (if that occurred). 
+
+```{r}
+tally(Ksol1$cluster ~ wardSol, data = cereals, format = "count")
+```
+
+What do you see? Bear in mind the Ward's linkage does incorporate some spread information, even though the original distances were not standardized, and this k-means is standardized.
+
+We can plot the k-means solution in PC space as:
+
+```{r}
+cerPCAs <- princomp(cereals[, -c(1, 2, 11)], cor = TRUE)
+plot(cerPCAs$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main="K-means Four cluster solution") #blank!
+text(cerPCAs$scores[, 1:2], labels = Ksol1$cluster, cex = 0.7)
+```
+
+Do the 4 clusters appear separated in 2-D PC space? They don't have to be. The separation can exist in higher dimensional space. 
+
+Here is the plot using symbols instead of text labels for the clusters. pch stands for plotting character. 
+
+```{r}
+plot(cerPCAs$scores[, 1:2], type = "p", xlab = "PC1", ylab = "PC2", main = "K-means Four cluster solution", pch = Ksol1$cluster)
+```
+
+Your textbook shows you an image plot (or heatmap) of the dissimilarity matrix, so here we look at the one for the cereals data. The command requires the lattice library, which should be installed already.
+
+```{r}
+cer.dist.scale <- dist(scale(cereals[,-c(1,2,11)]))
+levelplot(as.matrix(cer.dist.scale), xlab = "Cereal Number", ylab = "Cereal Number")
+```
+
+Where are the dissimilarities 0? Why? 
+
+
+### Additional Material on Hierarchical Methods
+
+You can run some alternative functions than hclust to obtain hierarchical solutions.
+
+Pull up the help menu for *agnes* to investigate it. Agnes runs agglomerative clustering, can be fed either a data matrix or a dissimilarity matrix, has multiple linkages available, and can do the standardization FOR you. The default is euclidean distance using average linkage but without standardization. Here is an example application.
+
+```{r}
+hagnes <- agnes(cereals[, -c(1, 2, 11)], diss = FALSE, stand = TRUE)
+```
+
+We can get the dendrogram as:
+
+```{r}
+plot(hagnes, which = 2)
+```
+
+We can also get a banner plot from using this function. The banner plot is a different way of looking at a dendrogram. Shaded area indicates where a merge occurred. 
+
+```{r}
+plot(hagnes, which = 1) #OR
+bannerplot(hagnes)
+```
+
+Looking back at the dendrogram or at the bannerplot (first option), we see an agglomerative coefficient. Values close to 1 indicate a strong clustering solution has been found. 0.79 isn't terrible, but also isn't awesome.
+
+You could look at other hierarchical clustering functions - *diana* does divisive clustering. Diana has an associated divisive coefficient. Again, values near 1 are optimal for strong clustering solutions.
+
+### Visualizations (From 6.6)
+
+The convex clustering method/function is introduced in 6.6 in order to show you a neighborhood plot. Their example uses k-means clustering. Here, we use it to demonstrate the plot. It specifies this plot should only be used on a bivariate solution (or a projection to PC axes or similar). So, we base our solution on potassium and sodium as an example. This requires the *flexclust* package, so you'll need to install it once. You could investigate the *cclust* function further. 
+
+
+```{r}
+km4 <- cclust(scale(cereals[, c(6, 10)]), k = 4, save.data = TRUE)
+plot(km4, hull = FALSE, col = rep("black", 4))
+```
+
+I did not check here to see if 4 was a good number of clusters because the plot is designed to help assess this. Thicker lines indicate the clusters may not really be separate. Let's look at what happens when k=8. 
+
+```{r}
+#again, you could use select to pull out the variables sodium and potassium
+km8 <- cclust(scale(cereals[, c(6, 10)]), k = 8, save.data = TRUE)
+plot(km8,hull = FALSE, col = rep("black", 8))
+```
+
+Which solution do you prefer? K=4 or K=8? Maybe some other value? 
+
+Another plot in 6.6 is the stripes plot. This is also in the flexclust package. Here, this shows you what the next closest cluster centroid for each observation is. Ideally, we want observations to fit well in their own clusters. Ask me if you have trouble understanding this plot (the book presentation isn't awesome) after reading below. This is NOT restricted to 2-variable solutions, so we change that. 
+
+```{r}
+k4 <- cclust(scale(cereals[, -c(1, 2, 11)]), k = 4, save.data = TRUE)
+stripes(k4, type = "first") #distance of each observation to its cluster centroid
+stripes(k4, type = "second") #to its centroid and second-closest centroid
+stripes(k4, type = "all")
+```
+
+Each cluster is shown. In the *type= first* plot, you see how far the observations in each cluster are from their cluster centroids. The height of the bar shows the range of distances from the centroid in that cluster. No cluster comparisons are made here, other than this range of distances. 
+
+Let's look at the *type=second* plot. In the cluster 1 large rectangle, we see a smaller rectangle that has the distance each observation in cluster 1 is from the cluster one centroid. That's the same rectangle from the *type=first* plot. The OTHER lines in the large cluster 1 rectangle are from observations in clusters 2, 3, or 4 whose second-closest cluster centroid is the cluster 1 centroid. A similar idea holds for the other cluster large rectangles. Ideally, you'd see a clusters own points at a low distance from that cluster centroid, and at higher distances from other cluster centroids. The type ="all" plot shows how the points line up compared to the centroids for all other clusters, not just first and second closest clusters. 
+
+
+## Second Clustering Example
+
+```{r}
+crabs <- read.table("https://awagaman.people.amherst.edu/stat240/crabs.txt", h = T)
+```
+
+For our second example, we have data from Campbell & Mahon (1974). This is data on the morphology of rock crabs of genus Leptograpsus.  There are 50 specimens of each sex of each of two color forms. The variables are:   
+sp  `species', coded B (blue form) or O (orange form)  
+sex	coded M or F  
+FL	frontal lip of carapace (mm)  
+RW	rear width of carapace (mm)  
+CL	length along the midline of carapace (mm)  
+CW	maximum width of carapace (mm)  
+BD	body depth (mm)  
+
+We will look for natural groups in the data and see if the natural groups correspond to sex or species differences. 
+
+### Hierarchical Clustering
+
+Construct a distance matrix. We have 5 variables, and all are measured in mm. 
+
+```{r}
+summary(crabs)
+```
+
+The scales do not look terribly different. 
+
+```{r}
+crab.dist <- dist(crabs[, -c(1:2)])
+crab.dist.scale <- dist(scale(crabs[, -c(1:2)]))
+```
+
+Let's look at the heatmaps of the distance matrices to see what their differences are.
+
+```{r}
+levelplot(as.matrix(crab.dist), main="Unscaled", xlab = "Crab Number", ylab = "Crab Number")
+levelplot(as.matrix(crab.dist.scale), main="Scaled", xlab = "Crab Number", ylab = "Crab Number")
+```
+
+Overall, these look very similar. We'll look at solutions based on the scaled matrix. Remember that if you do NOT scale, you may find your cluster solutions really just finding groups based on 1 or 2 variables, which may not be appropriate (usually isn't appropriate).
+
+Now we look at how hierarchical clustering applied to the crabs data set. 
+
+```{r}
+hcsingle <- hclust(crab.dist.scale, method = "single") 
+list(hcsingle) # reminds you of properties of the solution, if desired
+```
+
+This creates the solution, and we can look at the dendrogram as:
+
+```{r}
+plot(hcsingle, cex = 0.7)
+```
+
+The observation numbers show up as the labels. It is hard to read the labels for the 200 objects. Bear this in mind for your projects! There may be newer R packages designed to help render plots better. I will investigate and see if I can give you any updates. 
+
+We cut this solution at a height of 0.45 to save the results.
+
+```{r}
+singleSol <- (cutree(hcsingle, h = 0.45)) #cluster labels are numeric, h= height
+summary(as.factor(singleSol)) #as factor to get table
+```
+
+We also run a Ward's solution to examine. 
+
+```{r}
+hcward <- hclust(crab.dist.scale, method = "ward.D") 
+plot(hcward, cex = 0.7)
+wardSol <- (cutree(hcward, k= 5)) #cluster labels are numeric, k= # clusters, k=3 also reasonable
+summary(as.factor(wardSol)) #as factor to get table
+```
+
+Do these solutions correspond to the sex, species, or combination of the two categorical variables?
+
+To figure this out, we look at a series of tables, and create a new variable that gives us the 4 groups (orangeF, orangeM, blueF, blueM):
+
+First the new variable created:
+
+```{r}
+sscross <- as.factor(paste(crabs$sp, crabs$sex, sep = ""))
+summary(sscross)
+```
+
+Now the tables:
+
+```{r}
+tally(sex ~ sscross, format = "count", data = crabs) #first variable goes in the rows
+```
+
+Compared to the clustering solutions:
+
+```{r}
+tally(singleSol ~ sscross, format = "count")
+tally(wardSol ~ sscross, format = "count") #first variable goes in the rows
+```
+
+The single solution has so many outliers that we don't see much of interest here.
+
+In the Ward solution, we see that Cluster 2 (for example) is mostly blue crabs, while cluster 5 is mostly orange crabs. However, we don't see "pure" intersections of any of our groups. Most of the orange crabs are in wards clusters 3-5, but the blue crabs are mixed in pretty well. To see the cluster differences, we can use favstats to look at center/spread for each variable by group.
+
+```{r}
+favstats(FL ~ wardSol, data = crabs)
+favstats(RW ~ wardSol, data = crabs)
+favstats(CL ~ wardSol, data = crabs)
+favstats(CW ~ wardSol, data = crabs)
+favstats(BD ~ wardSol, data = crabs)
+```
+
+What is happening here should be evident in the PC space pretty clearly.
+
+```{r}
+crabPCA <- princomp(crabs[, -c(1,2)], cor = TRUE)
+plot(crabPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
+text(crabPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
+crabPCA$loadings[, 1:2]
+```
+
+Here is where the sex and species groups are in the PC space:
+
+```{r}
+plot(crabPCA$scores[,1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Sex and Species Groups") 
+text(crabPCA$scores[,1:2], labels = sscross, cex=0.6)
+```
+
+So, the clusters recovered are basically based on size, and don't really align with sex or species. 
+
+Would the unscaled solution have helped us see clusters based on sex or species?
+
+```{r}
+hcward2 <- hclust(crab.dist, method = "ward.D") 
+plot(hcward2, cex = 0.7)
+wardSol2 <- (cutree(hcward2, k= 4)) #cluster labels are numeric, k= # clusters, k=3 also reasonable
+summary(as.factor(wardSol2)) #as factor to get table
+tally(wardSol2 ~ sscross, format = "count")
+```
+
+Again, there is NO guarantee what the clustering solution will recover categorical variables that you have. We were just checking to see if sex/species were related to the natural groups uncovered by clustering. 
+
+### K-means Methods
+
+First, we look at WSS values to assess good values for k.
+
+```{r}
+wss <- rep(0, 12) #creates 8 copies of 0 to create an empty vector
+for(i in 1:12){wss[i] <- sum(kmeans(scale(crabs[, -c(1,2)]), centers = i)$withinss)}                   
+plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares")
+```
+
+4 clusters is actually a pretty good elbow. 
+
+```{r}
+Ksol1 <- kmeans(scale(crabs[, -c(1,2)]), centers = 4) #centers is the # of clusters
+list(Ksol1) #so you can see what it gives you
+```
+
+The list option provides us with lots of information. You can pull out the cluster means as:
+
+```{r}
+Ksol1$centers
+```
+
+One thing to remember here is that these were STANDARDIZED, otherwise, negative values would make no sense. 
+
+We can also get the clustering vector (with the cluster labels) as:
+
+```{r}
+Ksol1$cluster
+```
+
+With four clusters, we should see if there is any relationship with sex/species.
+
+```{r}
+tally(Ksol1$cluster ~ sscross, data = crabs, format = "count")
+```
+
+What do you see? 
+
+How do the K-means and Ward's solutions overlap?
+
+```{r}
+tally(Ksol1$cluster ~ wardSol, format = "count")
+```
+
+What do you see? There is some agreement and splitting here. 
+
+### Agglomerative Coefficients for Hierarchical Methods
+
+```{r}
+hagnes <- agnes(crabs[, -c(1,2)], diss = FALSE, stand = TRUE, method = "ward")
+plot(hagnes, which = 2)
+plot(hagnes, which = 1) 
+```
+
+The agglomerative coefficient increases as n increases, but even still, this is very close to 1. Note that this does NOT match the previous Ward's solution. Agnes divides by mean absolute deviation when standardizing, so this is a different standardization than using the scale function. 
+
+### Visualizations (From 6.6)
+
+#### Neighborhood Plots 
+
+Require only using 2 variables, or using a projection to a PC space in 2D. I'm using just the variables FL and RW. 
+
+```{r}
+km4 <- cclust(scale(crabs[, c(3, 4)]), k = 4, save.data = TRUE)
+plot(km4, hull = FALSE, col = rep("black", 4))
+```
+
+I did not check here to see if 4 was a good number of clusters. The plot is designed to help assess this. Thicker lines indicate the clusters may not really be separate. Let's look at what happens when k=8. 
+
+```{r}
+km8 <- cclust(scale(crabs[, c(3, 4)]), k = 8, save.data = TRUE)
+plot(km8, hull = FALSE, col = rep("black", 8))
+```
+
+Which solution do you prefer? K=4 or k=8? How many clusters might you really want?
+
+Another plot in 6.6 is the stripes plot. This is also in the flexclust package. Here, this shows you what the next closest cluster centroid for each observation is. Ideally, we want observations to fit well in their own clusters.  
+```{r}
+set.seed(100)
+k4 <- cclust(scale(crabs[, -c(1,2)]), k = 4, save.data = TRUE) #back to all quantitative variables
+stripes(k4, type = "first") #distance of each observation to its cluster centroid
+stripes(k4, type = "second") #to its centroid and second-closest centroid
+stripes(k4, type = "all")
+```
+
+
+### Other Algorithms
+
+There are LOTS of other clustering algorithms. Here, I show just a few to give you a sense of what is out there. 
+
+```{r, include = FALSE}
+library(mclust)
+```
+
+
+For model-based clustering, here I try using the *mclust* package with just three of the variables in the crabs data set. This uses finite normal mixture modeling. 
+
+
+```{r}
+crabsub <- select(crabs, FL, RW, BD)
+mclustsol <- mclustBIC(crabsub)
+plot(mclustsol)
+```
+
+This plot shows the MANY different models in mclust and how they did with this data set. 
+
+```{r}
+summary(mclustsol)
+```
+
+Here, we see which algorithms had the best BIC values. These are the models you might want to investigate further. 
+
+To try out the first solution, we can do:
+
+```{r}
+mod1 <- Mclust(crabsub, x = mclustsol)
+summary(mod1, parameters = TRUE)
+```
+
+This says that in the 3-D space we had, it found 2 clusters of roughly equal size. It shows us the group means and the variances in each cluster. 
+
+```{r}
+plot(mod1, what = "classification")
+```
+
+I chose only 3 variables so I could make the next plot and it still be readable. We can see that it finds two groups that are fairly well separated along some of the projections. You can do this in higher dimensions, obviously, but the plot may not look at nice. 
+
+For more on mclust (and how I did this quickly), you can check out this site, which is the package vignette from R [here](https://cran.r-project.org/web/packages/mclust/vignettes/mclust.html).
+
+```{r, include = FALSE}
+library(apcluster)
+```
+
+Another algorithm I mentioned before is graph-based - affinity propagation. This requires the *apcluster* package. 
+
+Affinity propagation wants a similarity function, not a dissimilarity function, so here, I use the default they suggest in the papers where it was developed. 
+
+```{r}
+s1 <- negDistMat(crabs[, -c(1:2)], r=2) #r=2 for squared distances
+apsol <- apcluster(s1)
+```
+
+Now we can look at the solution.
+
+```{r}
+apsol
+```
+
+It finds 11 clusters, reports which observations are in each cluster, and reports the cluster "exemplar" for each cluster.
+
+The next plot to visualize gets a little crazy. You could do smaller subsets of the variables at a time to view it.
+
+```{r}
+plot(apsol, crabs[, -c(1:2)])
+```
+
+We can also try a heatmap visualization.
+
+```{r}
+#heatmap(apsol, s1) #requires similarity matrix
+#too big to knit, but ran fine
+```
+
+There are LOTS of options to change for this function, and it might help to read the original paper or R help menus to understand what they are.
+

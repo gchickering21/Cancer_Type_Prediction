@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556159126266.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "645992640",
+    "id" : "902223FB",
+    "lastKnownWriteTime" : 1556479502,
+    "last_content_update" : 1556480045689,
+    "path" : "~/Stats Project/Anaysis.Rmd",
+    "project_path" : "Anaysis.Rmd",
+    "properties" : {
+        "cursorPosition" : "233,0",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

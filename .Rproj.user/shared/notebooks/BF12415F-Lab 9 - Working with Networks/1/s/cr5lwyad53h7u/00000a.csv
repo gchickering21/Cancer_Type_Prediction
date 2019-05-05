@@ -1,0 +1,2 @@
+"0","mylayout <- layout_(g2, as_star())"
+"0","plot(g2, layout = mylayout)"

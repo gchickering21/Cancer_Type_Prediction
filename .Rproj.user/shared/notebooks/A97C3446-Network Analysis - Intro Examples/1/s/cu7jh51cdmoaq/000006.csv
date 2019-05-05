@@ -1,0 +1,4 @@
+"0","#read in the edges and vertices files"
+"0","g <- graph_from_data_frame(GroupEdges, directed=FALSE, vertices=GroupVertices)"
+"2","Error in as.data.frame(d) : object 'GroupEdges' not found
+"

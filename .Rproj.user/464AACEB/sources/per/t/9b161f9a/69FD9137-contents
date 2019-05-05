@@ -1,0 +1,87 @@
+---
+output:
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+## Stat 240 - Homework #7 - Due Monday, April 29
+### YOUR NAME GOES HERE        
+### Help From:NamesofAnyoneYouGotHelpFromGoHere
+
+
+```{r, include = FALSE}
+library(mosaic)
+options(digits = 6)
+library(sand)
+library(igraph)
+library(NetData) #install for access to data set
+```
+
+### Theoretical Portion
+
+You should be able to answer basic questions about networks, but will practice this in the data analysis portion, so there is no theoretical portion this week. 
+
+
+### Data Analysis Portion
+
+This data set is taken from the NetData package, and code modified from Stanford's SNA course [here] (https://sna.stanford.edu/rlabs.php). Note that while they use the data set in a lab, different methods/setup are provided here, so looking through the labs won't help for the assignment (though they do have lots of neat code for more network analysis if you are interested!).
+
+```{r}
+data(studentnets.M182, package = "NetData")
+```
+
+The data set is from this source: McFarland, Daniel A. (2001) "Student Resistance." American Journal of Sociology, 107(3), p 612-678. From the package help file "This data consists of a sociometric friendship survey (2 = best friend, 1 = friend, 0 = not friend)." While there are three components to the data set, we will just look at the friendship network and the social network (not the task network). 
+
+```{r}
+#Code modified from Stanford SNA Lab 4
+m182_full_nonzero_edges <- subset(m182_full_data_frame, (friend_tie > 0 | social_tie > 0 | task_tie > 0))
+head(m182_full_nonzero_edges)
+
+m182_full <- graph.data.frame(m182_full_nonzero_edges) 
+summary(m182_full)
+
+friend <- delete.edges(m182_full,E(m182_full)[get.edge.attribute(m182_full,name = "friend_tie")==0])
+friend <- as.undirected(friend, mode='collapse')
+summary(friend)
+social <- delete.edges(m182_full, E(m182_full)[get.edge.attribute(m182_full,name = "social_tie")==0])
+social <- as.undirected(social, mode='collapse')
+summary(social)
+```
+
+We want to 1) compare the two networks (broadly - you have many descriptive statistics you can examine), 2) determine which students are most important in both networks (and whether that agrees for both), and 3) determine what community structure is present in the networks, and whether or not it is the same in both networks. 
+
+
+### Introduction
+
+> You should provide your own brief introduction.
+
+### Preliminary Analysis
+
+> You can make basic comparisons of the two graphs here - normally you'd check means/variable spread, etc. So you can check # of vertices, edges, etc. here. 
+
+```{r}
+plot(friend) 
+plot(social)
+```
+
+
+### Methods
+
+> Your methods section should touch on your choice of centrality measure and community detection algorithm (i.e. at least one of each should be discussed). If you aim to try many, write this section at the end after you find the one you want to use in your final solution. 
+
+
+### Results
+ 
+
+### Conclusion (if desired)
+
+
+
+
+

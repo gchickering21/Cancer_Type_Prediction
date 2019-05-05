@@ -1,0 +1,4 @@
+"0","ggpairs(sampleData[,-c(6)], mapping=ggplot2::aes(colour = sampleData$Class))"
+"2","Error in ggpairs(sampleData[, -c(6)], mapping = ggplot2::aes(colour = sampleData$Class)) : 
+  could not find function ""ggpairs""
+"

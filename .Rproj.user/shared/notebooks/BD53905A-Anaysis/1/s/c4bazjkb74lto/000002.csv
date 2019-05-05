@@ -1,0 +1,2 @@
+"0","hagnes <- agnes(reducedGroupData[, -c(56)], diss = FALSE, stand = TRUE)"
+"0","plot(hagnes, which = 2)"

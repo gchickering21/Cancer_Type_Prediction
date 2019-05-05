@@ -1,0 +1,3 @@
+"0","#Code modified from Stanford SNA Lab 4"
+"0","m182_full_nonzero_edges <- subset(m182_full_data_frame, (friend_tie > 0 | social_tie > 0 | task_tie > 0))"
+"0","head(m182_full_nonzero_edges)"

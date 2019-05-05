@@ -1,0 +1,4 @@
+"0","distmat <- as.matrix(crab.dist.scale)"
+"0","#choose a cutoff distance"
+"0","myadj <- matrix(as.numeric(distmat < 2), nrow = 200) #chose 2 as a distance"
+"0","diag(myadj) <- 0 #reset diag to 0 so no loops"

@@ -1,0 +1,164 @@
+---
+title: "Stat 240 - Network Analysis - Intro Examples"
+author: "A.S. Wagaman"
+output:
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+
+
+```{r, include = FALSE}
+library(mosaic)
+library(sand)
+library(igraph)
+library(sna)
+library(network)
+```
+
+## Examples in the Handout - Chapters 1 and 2
+
+```{r}
+set.seed(245)
+g <- erdos.renyi.game(6, 0.4, type = "gnp")
+plot(g)
+```
+
+
+```{r}
+set.seed(235)
+g <- erdos.renyi.game(8, 0.25, type = "gnp")
+plot(g)
+```
+
+```{r}
+set.seed(240)
+g <- erdos.renyi.game(10, 0.2, type = "gnp")
+plot(g)
+```
+
+
+```{r}
+set.seed(250)
+g <- erdos.renyi.game(12, 0.2, type = "gnp")
+plot(g)
+```
+
+
+### Small-World Examples vs. Random Graphs
+
+```{r}
+set.seed(250)
+g <- erdos.renyi.game(12, 0.25, type = "gnp")
+plot(g)
+```
+
+```{r}
+set.seed(260)
+g <- erdos.renyi.game(12, 0.2, type = "gnp")
+plot(g)
+```
+
+
+```{r}
+set.seed(250)
+g <- watts.strogatz.game(1, 12, 3, 0.2)
+plot(g)
+```
+
+
+```{r}
+set.seed(250)
+g <- watts.strogatz.game(1, 12, 3, 0.1)
+plot(g)
+```
+
+
+
+
+## Examples in the Handout - Chapters 3-4
+
+
+### Class Group Network
+
+
+
+```{r}
+#read in the edges and vertices files
+g <- graph_from_data_frame(GroupEdges, directed=FALSE, vertices=GroupVertices)
+print(g, e=TRUE, v=TRUE)
+```
+
+
+
+```{r}
+set.seed(240)
+l <- layout.kamada.kawai(g)
+plot(g, layout = l)
+V(g)[Year == 2019]$shape <- "circle"
+V(g)[Year == 2020]$shape <- "rectangle"
+V(g)[Year == 2021]$shape <- "sphere"
+plot(g, layout = l)
+```
+
+
+
+```{r}
+gf_histogram( ~ degree(g))
+tally(~ degree(g))
+```
+
+```{r, warning = FALSE}
+A <- get.adjacency(g, sparse=FALSE)
+g2 <- network::as.network.matrix(A)
+sna::gplot.target(g2, degree(g2), main="Degree", circ.lab = FALSE, circ.col="skyblue", usearrows = FALSE, edge.col = "darkgray")
+```
+
+
+
+```{r, warning = FALSE}
+A <- get.adjacency(g, sparse=FALSE)
+g2 <- network::as.network.matrix(A)
+sna::gplot.target(g2, closeness(g2), main="Closeness", circ.lab = FALSE, circ.col="skyblue", usearrows = FALSE, edge.col = "darkgray")
+favstats(~ closeness(g2))
+length(unique(closeness(g2)))
+sort(closeness(g2), method = "shell", index.return = TRUE, decreasing = TRUE) 
+```
+
+
+```{r, warning = FALSE}
+A <- get.adjacency(g, sparse=FALSE)
+g2 <- network::as.network.matrix(A)
+sna::gplot.target(g2, betweenness(g2), main="Betweenness", circ.lab = FALSE, circ.col="skyblue", usearrows = FALSE, edge.col = "darkgray")
+favstats(~ betweenness(g2))
+length(unique(betweenness(g2)))
+sort(betweenness(g2), method = "shell", index.return = TRUE, decreasing = TRUE) 
+```
+
+
+
+```{r, warning = FALSE}
+A <- get.adjacency(g, sparse=FALSE)
+g2 <- network::as.network.matrix(A)
+sna::gplot.target(g2, evcent(g2), main="Eigenvector", circ.lab = FALSE, circ.col="skyblue", usearrows = FALSE, edge.col = "darkgray")
+favstats(~ evcent(g2))
+length(unique(evcent(g2)))
+sort(evcent(g2), method = "shell", index.return = TRUE, decreasing = TRUE) 
+```
+
+```{r}
+graph.density(g)
+transitivity(g)
+sort(transitivity(g, "local"), method = "shell", index.return = TRUE, decreasing = TRUE) 
+tally(~ transitivity(g, "local"))
+average.path.length(g)
+diameter(g)
+```
+
+

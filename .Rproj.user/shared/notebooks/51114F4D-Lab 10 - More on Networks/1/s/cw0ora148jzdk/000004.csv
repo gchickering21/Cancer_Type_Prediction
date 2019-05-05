@@ -1,0 +1,4 @@
+"0","tally(fg1$membership ~ wardSol)"
+"2","Error in data.frame(left, right) : 
+  arguments imply differing number of rows: 12, 801
+"

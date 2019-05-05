@@ -1,0 +1,2 @@
+"0","mylayout4 <- layout_(g2, with_mds())"
+"0","plot(g2, layout = mylayout4)"

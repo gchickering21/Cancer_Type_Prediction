@@ -1,0 +1,357 @@
+---
+title: "Stat 240 - Lab 9 - Working with Networks"
+author: "A.S. Wagaman"
+output:
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+
+
+```{r, include = FALSE} 
+library(mosaic) #load required/useful packages
+options(digits = 3) # sets so output is only 3 digits
+library(sand)
+library(igraph)
+#library(sna) #may need to install - do not load directly
+#library(network) #may need to install - do not load directly
+```
+
+Part 1 will lead you through basic computations on networks - basically computing the descriptive statistics and making plots like you saw in the handout. Then we'll turn our attention to clustering and other network data. 
+
+## Part 1 - Basic Visuals and Computations on Networks
+
+The *igraph* package contains several methods of generating random graphs. We'll work with two graphs below. Change the seed to what you want - I want folks to have different graphs, but you'll see similar patterns in the behavior of statistics below.
+
+
+```{r}
+set.seed(240) #CHANGE the SEED
+g <- erdos.renyi.game(20, 0.15, type = "gnp")
+plot(g) #random
+g2 <- watts.strogatz.game(1, 20, 3, 0.15)
+plot(g2) #small-world
+```
+
+Both of these graphs have twenty vertices, but one is set up to be random and the other is small-world (set up with a starting connected ring). 
+
+### Visualization
+
+There are specific layouts, and functions to call them in igraph. Let's look at different ways of plotting g2.
+
+```{r}
+mylayout <- layout_(g2, as_star())
+plot(g2, layout = mylayout)
+
+mylayout2 <- layout_(g2, as_tree())
+plot(g2, layout = mylayout2)
+
+mylayout3 <- layout_(g2, nicely())
+plot(g2, layout = mylayout3)
+
+mylayout4 <- layout_(g2, with_mds())
+plot(g2, layout = mylayout4)
+
+#for more options, look at ?layout
+```
+
+
+Which of these layouts do you prefer? Can you think of different reasons you might want one layout over another?
+
+### Decorating Graphs
+
+In order to have some decorations, we need vertex attributes (or edge attributes). So, I will create some.
+
+```{r}
+mycolor <- c(rep("red", 10), rep("yellow", 10))
+mygroup <- c(rep(1, 7), rep(2, 6), rep(3, 7))
+```
+
+If you had these in a data set, you can bring them in that way.
+
+```{r}
+V(g2)$color <- mycolor
+V(g2)$group <- mygroup
+V(g2)[mygroup == 1]$shape <- "circle"
+V(g2)[mygroup == 2]$shape <- "rectangle"
+V(g2)[mygroup == 3]$shape <- "sphere"
+plot(g2)
+```
+
+color and shape are attributes of the graph that are naturally present and we are setting them equal to certain values here based on the attributes we want. For color, that means setting it equal to our color vector. For the groups, we are setting shape based on the group labels. 
+
+### Descriptive Statistics
+
+Let's explore descriptive statistics on both our graphs to see the differences between a random graph and a small-world graph. First, we can make sure we can count vertices and edges.
+
+```{r}
+vcount(g)
+ecount(g)
+
+vcount(g2)
+ecount(g2)
+```
+
+
+#### Degree
+
+```{r}
+gf_histogram( ~ degree(g)) 
+tally(~ degree(g))
+
+gf_histogram( ~ degree(g2)) 
+tally(~ degree(g2))
+```
+
+How do the degree distributions compare? Is this expected?
+
+#### Closeness Centrality
+
+Briefly, what does closeness centrality compute/measure?
+
+```{r}
+gf_histogram(~ closeness(g))
+favstats(~ closeness(g))
+length(unique(closeness(g)))
+sort(closeness(g), method = "shell", index.return = TRUE, decreasing = TRUE)
+
+gf_histogram(~ closeness(g2))
+favstats(~ closeness(g2))
+length(unique(closeness(g2)))
+sort(closeness(g2), method = "shell", index.return = TRUE, decreasing = TRUE) 
+```
+
+
+How do the closeness centrality distributions compare? Is this expected?
+
+#### Betweenness Centrality
+
+Briefly, what does betweenness centrality compute/measure?
+
+```{r}
+gf_histogram(~ betweenness(g, normalized = TRUE))
+favstats(~ betweenness(g, normalized = TRUE))
+length(unique(betweenness(g, normalized = TRUE)))
+sort(betweenness(g, normalized = TRUE), method = "shell", index.return = TRUE, decreasing = TRUE) 
+
+gf_histogram(~ betweenness(g2, normalized = TRUE))
+favstats(~ betweenness(g2, normalized = TRUE))
+length(unique(betweenness(g2, normalized = TRUE)))
+sort(betweenness(g2, normalized = TRUE), method = "shell", index.return = TRUE, decreasing = TRUE) 
+```
+
+Without the normalized = TRUE argument, the measure is not scaled between 0 and 1 (i.e. the default is NOT to scale it).
+
+How do the betweenness centrality distributions compare? Is this expected? (Think carefully about this one.)
+
+
+#### Eigenvector Centrality
+
+Briefly, what does eigenvector centrality compute/measure?
+
+```{r}
+gf_histogram(~ evcent(g)$vector)
+favstats(~ evcent(g)$vector)
+length(unique(evcent(g)$vector))
+sort(evcent(g)$vector, method = "shell", index.return = TRUE, decreasing = TRUE) 
+
+gf_histogram(~ evcent(g2)$vector)
+favstats(~ evcent(g2)$vector)
+length(unique(evcent(g2)$vector))
+sort(evcent(g2)$vector, method = "shell", index.return = TRUE, decreasing = TRUE) 
+```
+
+How do the eigenvector centrality distributions compare? Is this expected? 
+
+
+#### Clustering
+
+Transitivity (clustering) is measured via clustering coefficients.
+
+```{r}
+#?transitivity
+```
+ 
+A look at the help menu will show you that there are MANY options here for computing the clustering coefficient.
+
+```{r}
+transitivity(g)
+transitivity(g2)
+```
+
+How do the global graph transitivities compare? Does this make sense?
+
+What about the local values?
+
+```{r}
+sort(transitivity(g, "local"), method = "shell", index.return = TRUE, decreasing = TRUE) 
+tally(~ transitivity(g, "local"))
+#you could make histograms if there were more values to show
+sort(transitivity(g2, "local"), method = "shell", index.return = TRUE, decreasing = TRUE) 
+tally(~ transitivity(g2, "local"))
+```
+
+What do you notice in the transitivities for g? Generally, how do the values compare?
+
+
+#### Other Statistics
+
+These include density, average path length, and diameter. Be sure you know what each statistic measures.
+
+```{r}
+graph.density(g)
+graph.density(g2)
+
+average.path.length(g)
+average.path.length(g2)
+
+diameter(g)
+diameter(g2)
+```
+
+
+Recall that g is disconnected. When that happens, even though some values are technically undefined, igraph resorts to computing the statistics on the largest component (giant component). 
+
+
+#### Circular Graphs
+
+These use the sna and network libraries, and cause conflicts with igraph, so be careful if you want them. You might have to do a lot of direct calling from packages to get what you want to work. The commands are in your textbook, and in the posted example code from the handouts, but I had a lot of issues with conflicts here, so I left them out for the lab activity. 
+
+
+
+## Part 2 - Community Detection
+
+There are many community detection algorithms in igraph for us to try out. Two are mentioned in your text, so let's examine those first.
+
+### Hierarchical Clustering
+
+The function here is *fastgreedy.community*.
+
+```{r}
+fg1 <- fastgreedy.community(g)
+length(fg1)
+sizes(fg1)
+membership(fg1) #this is the clustering vector you are used to
+plot(fg1, g) #how to plot the solution
+```
+
+What do you expect to happen when you try this on g2? Try it.
+
+```{r}
+
+```
+
+
+If you want to make dendPlots like in the textbook, you'll need to install and load the *ape* package. 
+
+#### Modularity
+
+This is a statistic that can be used in the clustering. We want large values. Let's compare the modularity of the solution found here with just an allocation to 3 groups (the mygroup vector we had above).
+
+```{r}
+modularity(g, fg1$membership)
+modularity(g, mygroup)
+```
+
+This should validate the solution to you somewhat. 
+
+What do you find when you apply this to g2?
+
+```{r}
+
+```
+
+
+
+### Spectral Partitioning
+
+The function here is *leading.eigenvector.community*.
+
+```{r}
+sp1 <- leading.eigenvector.community(g)
+length(sp1)
+sizes(sp1)
+membership(sp1) #this is the clustering vector you are used to
+plot(sp1, g) #how to plot the solution
+```
+
+Which solution do you prefer? fg1 or sp1?
+
+
+Try the spectral method out on g2. What do you find? How similar is it to the fg algorithm?
+
+```{r}
+
+```
+
+
+### Other methods
+
+There are several other functions for finding communities in igraph. They all have the same basic structure, which makes working with them fairly easy. Here are three you could consider.
+
+```{r}
+eb1 <- edge.betweenness.community(g)
+plot(eb1, g)
+```
+
+
+```{r}
+rw1 <- walktrap.community(g)
+plot(rw1, g)
+```
+
+
+```{r}
+sg2 <- spinglass.community(g2) #spinglass needs a connected graph, so trying it on g2
+plot(sg2, g)
+```
+
+
+### Real Data
+
+The text has used the karate network for most of its examples. We can try the lawyer network though to see what we find in terms of clusters.
+
+```{r, warning = FALSE}
+data("lazega")
+lazega2 <- upgrade_graph(lazega) #because graph is for older igraph version; convert
+plot(lazega2)
+```
+
+Remember there are some other variables here that we know about the lawyers.
+
+```{r}
+V(lazega2)$Practice
+V(lazega2)$Office
+V(lazega2)$Years
+```
+
+You can create tally matrices of these versus your clustering membership vectors to see if the clusters found match any of these. 
+
+For example, suppose we try the walktrap algorithm.
+
+```{r}
+walkLaz <- walktrap.community(lazega2)
+plot(walkLaz, lazega2)
+walkLaz$membership
+tally(V(lazega2)$Practice ~ walkLaz$membership)
+```
+
+It doesn't appear to have recovered the practice variable. But again, there's no reason to assume it would. 
+
+Try at least 3 different clustering algorithms on the lazega data set. What do you find? Does your preferred solution recover any of the other variables?
+
+
+
+
+
+
+
+
+
+
+

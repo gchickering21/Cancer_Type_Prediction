@@ -1,0 +1,286 @@
+---
+title: "Analysis"
+author: "Group D"
+date: "4/22/2019"
+output: pdf_document
+---
+
+
+```{r}
+library(randomForest) # for random forests and bagging
+library(cluster) #for access to daisy function
+library(lattice)
+library(flexclust)
+library(mosaic) 
+```
+
+# Preliminary Analysis
+
+The last column of the dataset (20533) is named "Class" - this is what we are trying to find
+
+Columns 2:20532 are genes
+
+```{r}
+head(groupddata)
+unique(groupddata$Class)
+tally(~ Class, data = groupddata)
+```
+
+### Distribution analysis of gene expression
+
+```{r, message=FALSE}
+set.seed(17)
+sampleData <- groupddata[ , c(sample(ncol(groupddata), 5),20533)]
+
+#checking the overall distributions of the sampled genes
+favstats(gene_3182 ~ Class, data = sampleData) # checking the distribution of one of the genes by class
+
+ggpairs(sampleData[,-c(6)], mapping=ggplot2::aes(colour = sampleData$Class))
+```
+
+### Feature Reduction
+
+Working through the dataset to reduce the number of predictors that we are going to use for further analyses.
+
+** This takes about 10 minutes to run! **
+
+```{r, cache = TRUE}
+pvals <- rep(1, 20530)
+
+for(i in 1:20530){
+  if(i %% 5000 == 0){
+    print(i)
+  }
+  s <- i + 1
+  pvals[i] <- anova(lm(groupddata[, s] ~ Class, data = groupddata))$"Pr(>F)"[1]
+} #find all ANOVA p-values
+
+#adjust for multiple testing, using bonferonni to be as conservative as possible
+holmp <- p.adjust(pvals, method = "bonf")
+length(which(holmp == 0))
+
+myvars <- which(holmp == 0) + 1 
+
+reducedGroupData <- data.frame(groupddata[, c(myvars, 20533)])
+reducedGroupData$Class <- as.factor(reducedGroupData$Class)
+
+```
+
+
+
+
+
+```{r}
+set.seed(40)
+cancerRandomForest <- randomForest(Class ~ ., data = reducedGroupData, mtry = 10, ntree = 100, importance = T, proximity = T)
+cancerRandomForest
+table(reducedGroupData$Class, predict(cancerRandomForest, groupddata))
+```
+
+
+
+Clustering Analysis - 
+
+Hierachical 
+
+Single Linkage  - 
+
+```{r}
+gene.dist <- dist(reducedGroupData[, -c(56)])
+```
+
+```{r}
+hcsingle <- hclust(gene.dist, method = "single")
+list(hcsingle)
+plot(hcsingle)
+```
+
+```{r}
+singleSol<- (cutree(hcsingle, k = 5))
+summary(as.factor(singleSol))
+```
+
+
+```{r}
+tally(singleSol ~ Class, format = "count", data = reducedGroupData)
+```
+
+
+```{r}
+singlePCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
+<<<<<<< HEAD
+=======
+singlePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+>>>>>>> 2319fc6df64b7fbe1a0b8721c95ff5f3c7a1a56b
+plot(singlePCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Single Five cluster solution") #blank!
+text(singlePCA$scores[, 1:2], labels = singleSol, cex = 0.6)
+singlePCA$loadings[, 1:2]
+```
+Problems with single include that it tends to have long stringy clusters, as shown here. This is a classic example of chaining. However, single linkage is helpful in finding extreme outliers. 
+
+
+Complete linkage - 
+
+```{r}
+hccomp <- hclust(gene.dist, method = "complete")
+list(hccomp)
+plot(hccomp)
+```
+
+```{r}
+compSol<- (cutree(hccomp, k = 5))
+summary(as.factor(compSol))
+```
+
+```{r}
+tally(compSol ~ Class, format = "count", data = reducedGroupData)
+```
+
+Complete looks much better than single linkage. Clusters well spread out. Complete linkage gives clustrers of similar diameter. Hence, this solution looks better than the single linkage. 
+
+```{r}
+compPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
+plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") 
+<<<<<<< HEAD
+=======
+compPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") #blank!
+>>>>>>> 2319fc6df64b7fbe1a0b8721c95ff5f3c7a1a56b
+text(compPCA$scores[, 1:2], labels = compSol, cex = 0.6)
+compPCA$loadings[, 1:2]
+```
+
+
+
+```{r}
+compsil <- silhouette(compSol, gene.dist)
+summary(compsil)
+plot(compsil)
+```
+
+
+Average Linkage - 
+```{r}
+hcavg <- hclust(gene.dist, method = "average")
+list(hcavg)
+plot(hcavg)
+```
+
+
+```{r}
+avgSol<- (cutree(hcavg, k = 5))
+summary(as.factor(avgSol))
+```
+
+
+```{r}
+tally(avgSol ~ Class, format = "count", data = reducedGroupData)
+```
+Compromise between average and single linkage. Cluster 3 is shockingly very small. 
+
+Wards Solution - 
+
+```{r}
+hcward <- hclust(gene.dist, method = "ward.D")
+list(hcward)
+plot(hcward)
+```
+
+```{r}
+wardSol<- (cutree(hcward, k = 5))
+summary(as.factor(wardSol))
+```
+
+```{r}
+tally(wardSol ~ Class, format = "count", data = reducedGroupData)
+```
+
+
+```{r}
+wardPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
+<<<<<<< HEAD
+=======
+plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution")
+wardPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+>>>>>>> 2319fc6df64b7fbe1a0b8721c95ff5f3c7a1a56b
+plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
+text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
+wardPCA$loadings[, 1:2]
+```
+```{r}
+wardsil <- silhouette(wardSol, gene.dist)
+summary(wardsil)
+plot(wardsil)
+```
+
+
+Hagnes - 
+
+
+```{r}
+hagnes <- agnes(reducedGroupData[, -c(56)], diss = FALSE, stand = TRUE)
+plot(hagnes, which = 2)
+plot(hagnes, which = 1) 
+```
+
+
+
+K means - 
+
+```{r}
+set.seed(9)
+wss <- rep(0, 12) 
+for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(56)]), centers = i)$withinss)}                   
+plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares")
+```
+
+We know that there are five classes, however looking for an elbow in the scree plot above we would like to see solutions based 5 clusters as expected.  
+
+
+```{r}
+Ksol1 <- kmeans(scale(reducedGroupData[, -c(56)]), centers = 5) 
+#list(Ksol1)
+Ksol1$centers
+```
+
+```{r}
+tally(Ksol1$cluster ~ Class, data = reducedGroupData, format = "count")
+```
+
+```{r}
+tally(Ksol1$cluster ~ wardSol, format = "count")
+```
+
+```{r}
+kmeanssilh <- silhouette(Ksol1$cluster, gene.dist)
+summary(kmeanssilh)
+plot(kmeanssilh)
+```
+<<<<<<< HEAD
+
+Centroid - 
+
+```{r}
+set.seed(100)
+centroid <- cclust(scale(reducedGroupData[, -c(56)]), k = 5, save.data = TRUE)
+stripes(centroid, type = "first") 
+stripes(centroid, type = "second") 
+stripes(centroid, type = "all")
+```
+
+```{r}
+tally(centroid ~ Class, data = reducedGroupData, format = "count")
+```
+
+
+Comparing Clustering and Classification - 
+
+
+```{r}
+tally(wardSol ~ cancerRandomForest$predicted, format = "count")
+```
+
+
+
+=======
+>>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23

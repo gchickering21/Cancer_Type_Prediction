@@ -7,11 +7,12 @@ output: pdf_document
 
 
 ```{r}
-library(randomForest) # for random forests and bagging
-library(cluster) #for access to daisy function
+library(randomForest)
+library(cluster)
 library(lattice)
 library(flexclust)
 library(mosaic) 
+library(ggfortify)
 ```
 
 # Preliminary Analysis
@@ -40,17 +41,18 @@ ggpairs(sampleData[,-c(6)], mapping=ggplot2::aes(colour = sampleData$Class))
 
 ### Feature Reduction
 
-Working through the dataset to reduce the number of predictors that we are going to use for further analyses.
+Feature Extraction
 
 ** This takes about 10 minutes to run! **
 
 ```{r, cache = TRUE}
-pvals <- rep(1, 20530)
+pvals <- rep(1, 20530) #creating the list to be populated with p-values
+
 
 for(i in 1:20530){
-  if(i %% 5000 == 0){
-    print(i)
-  }
+  # if(i%%5000 == 0){
+  #   print(i) #check the processing status
+  # }
   s <- i + 1
   pvals[i] <- anova(lm(groupddata[, s] ~ Class, data = groupddata))$"Pr(>F)"[1]
 } #find all ANOVA p-values
@@ -59,7 +61,7 @@ for(i in 1:20530){
 holmp <- p.adjust(pvals, method = "bonf")
 length(which(holmp == 0))
 
-myvars <- which(holmp == 0) + 1 
+myvars <- which(holmp == 0) + 1 #choosing the most significant predictors
 
 reducedGroupData <- data.frame(groupddata[, c(myvars, 20533)])
 reducedGroupData$Class <- as.factor(reducedGroupData$Class)
@@ -196,15 +198,26 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 ```{r}
 wardPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution")
 wardPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 >>>>>>> 2319fc6df64b7fbe1a0b8721c95ff5f3c7a1a56b
 plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
+=======
+plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") 
+>>>>>>> 8966d527dc9e9329de67cc0a6418073e34d139f8
 text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
 wardPCA$loadings[, 1:2]
+
+ggplot(wardPCA, aes(x = wardPCA$scores[, 1], y = wardPCA$scores[, 2], color = reducedGroupData$Class)) +
+  geom_text(label = wardSol)
 ```
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8966d527dc9e9329de67cc0a6418073e34d139f8
 ```{r}
 wardsil <- silhouette(wardSol, gene.dist)
 summary(wardsil)
@@ -254,6 +267,7 @@ kmeanssilh <- silhouette(Ksol1$cluster, gene.dist)
 summary(kmeanssilh)
 plot(kmeanssilh)
 ```
+<<<<<<< HEAD
 
 
 
@@ -279,6 +293,8 @@ plot(kmeanssilh2)
 ```
 
 <<<<<<< HEAD
+=======
+>>>>>>> 8966d527dc9e9329de67cc0a6418073e34d139f8
 
 Centroid - 
 
@@ -297,12 +313,7 @@ tally(centroid ~ Class, data = reducedGroupData, format = "count")
 
 Comparing Clustering and Classification - 
 
-
 ```{r}
 tally(wardSol ~ cancerRandomForest$predicted, format = "count")
 ```
 
-
-
-=======
->>>>>>> 568f4fd1ac9333a3a003ad2c6c1c69a720da6a23

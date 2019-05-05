@@ -1,0 +1,2 @@
+"0","mylayout3 <- layout_(g2, nicely())"
+"0","plot(g2, layout = mylayout3)"

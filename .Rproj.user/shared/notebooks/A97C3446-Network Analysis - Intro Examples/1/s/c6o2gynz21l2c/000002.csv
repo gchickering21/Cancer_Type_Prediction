@@ -1,0 +1,4 @@
+"0","gf_histogram( ~ degree(g))"
+"2","Error in FUN(X[[i]], ...) : 
+  as.edgelist.sna input must be an adjacency matrix/array, edgelist matrix, network, or sparse matrix, or list thereof.
+"

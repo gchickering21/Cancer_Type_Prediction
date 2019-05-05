@@ -1,0 +1,4 @@
+"0","m182_full <- graph.data.frame(m182_full_nonzero_edges) "
+"2","Error in graph.data.frame(m182_full_nonzero_edges) : 
+  could not find function ""graph.data.frame""
+"

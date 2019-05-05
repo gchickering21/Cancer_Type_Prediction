@@ -1,0 +1,3 @@
+"0","set.seed(260)"
+"0","g <- erdos.renyi.game(12, 0.2, type = ""gnp"")"
+"0","plot(g)"

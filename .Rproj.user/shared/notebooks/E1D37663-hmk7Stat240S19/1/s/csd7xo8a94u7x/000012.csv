@@ -1,0 +1,15 @@
+"0","m182_full <- graph.data.frame(m182_full_nonzero_edges) "
+"0","summary(m182_full)"
+"1","IGRAPH 04ad897 DN-- 16 144 -- "
+"1","
+"
+"1","+ attr: name (v/c), friend_tie (e/n), social_tie (e/n),"
+"1","
+"
+"1","| task_tie (e/n)"
+"1","
+"
+"0","friend <- delete.edges(m182_full, E(m182_full)[get.edge.attribute(m182_full,name = ""friend_tie"")==0])"
+"2","Error in delete.edges(m182_full, E(m182_full)[get.edge.attribute(m182_full,  : 
+  delete.edges requires an argument of class network.
+"
