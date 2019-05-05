@@ -12,6 +12,7 @@ library(cluster)
 library(lattice)
 library(flexclust)
 library(mosaic) 
+library(ggfortify)
 ```
 
 # Preliminary Analysis
@@ -176,9 +177,12 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 
 ```{r}
 wardPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
-plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
+plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") 
 text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
 wardPCA$loadings[, 1:2]
+
+ggplot(wardPCA, aes(x = wardPCA$scores[, 1], y = wardPCA$scores[, 2], color = reducedGroupData$Class)) +
+  geom_text(label = wardSol)
 ```
 
 
