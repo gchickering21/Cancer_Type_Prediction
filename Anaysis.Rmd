@@ -15,6 +15,34 @@ library(mosaic)
 library(ggfortify)
 ```
 
+
+```{r, include=FALSE}
+library(mosaic)
+library(readr)
+```
+
+Our project is about predicting cancer types based on RNA expressions.
+
+### Data Sources
+
+Our data source is the UCI Machine Learning Repo. The original data comes in as two files (samples with gene expressions and the labels for each sample). We combined these two datasets into one large set called "cancer.csv".
+
+### Workflow to Generate your Data Set
+
+The data set is was available as a .csv. The last column is called "Class" which is the label for each row.
+
+```{r}
+cancerData <- readRDS("cancer1.rda")
+cancerData2 <- readRDS("cancer2.rda")
+cancerData3 <- readRDS("cancer3.rda")
+cancerData4 <- readRDS("cancer4.rda")
+cancerData5 <- readRDS("cancer5.rda")
+
+groupddata <- data.frame(rbind(cancerData, cancerData2, cancerData3, cancerData4, cancerData5))
+groupddata$Class <- as.factor(groupddata$Class)
+```
+
+
 # Preliminary Analysis
 
 The last column of the dataset (20533) is named "Class" - this is what we are trying to find
@@ -22,21 +50,21 @@ The last column of the dataset (20533) is named "Class" - this is what we are tr
 Columns 2:20532 are genes
 
 ```{r}
-head(groupddata)
-unique(groupddata$Class)
-tally(~ Class, data = groupddata)
+#head(groupddata)
+#unique(groupddata$Class)
+#tally(~ Class, data = groupddata)
 ```
 
 ### Distribution analysis of gene expression
 
 ```{r, message=FALSE}
-set.seed(17)
-sampleData <- groupddata[ , c(sample(ncol(groupddata), 5),20533)]
+#set.seed(17)
+#sampleData <- groupddata[ , c(sample(ncol(groupddata), 5),20533)]
 
 #checking the overall distributions of the sampled genes
-favstats(gene_3182 ~ Class, data = sampleData) # checking the distribution of one of the genes by class
+#favstats(gene_3182 ~ Class, data = sampleData) # checking the distribution of one of the genes by class
 
-ggpairs(sampleData[,-c(6)], mapping=ggplot2::aes(colour = sampleData$Class))
+#ggpairs(sampleData[,-c(6)], mapping=ggplot2::aes(colour = sampleData$Class))
 ```
 
 ### Feature Reduction
@@ -80,28 +108,142 @@ table(reducedGroupData$Class, predict(cancerRandomForest, groupddata))
 ```
 
 
+##Clustering Analysis 
 
-Clustering Analysis - 
 
-Hierachical 
 
-Single Linkage  - 
+The table below shows that the number of observations that belonged to each cancer type in our reduced data set. 
+```{r}
+tally(~Class, data = reducedGroupData, format = "count")
+```
+
+
+The general idea of clustering is to find groups in the data that are homogeneous with themselves and distinct from each other. Specifically, for this project, our clustering analysis allowed us to explore natural groupings in the gene expressions for each cancer type. From the exploratory analysis we know that there were five cancer types of “PRAD”, “LUAD”, “BRCA”, “KIRC” and “COAD” which would suggest that the data set had five natural groupings.Therefore, we began our clustering analysis expecting to find five cancer type groupings but were open to finding clustering solutions with a different number of natural groupings. We examined several clustering methods and by using trial and error looked for the best clustering solution. 
+
+
+
+
+###K means
+
+The K-means clustering technique partitions the data into a pre-specified number clusters and is a non-hierarchical clustering method. It aims to minimize a certain criterion, which in this case will be the within group sum of squares. The K-means clustering algorithm iteratively moves points around between clusters to drive the within group sum of squares down. 
 
 ```{r}
+set.seed(9)
+wss <- rep(0, 12) 
+for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(56)]), centers = i)$withinss)}                   
+plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares", main = "Scree Plot for K-means ") 
+
+```
+
+The code chunk above calculates the withing group sum of squares for each initial number of clusters between 0 and 12. In the plot, we are looking for clear elbows to indicate the number of clusters we should look for. As mentioned above, we expect five clusters because there are five cancer types and looking at the elbow plot we do see a definite elbow where the number of groups is 5. However, surprisingly, there is another elbow where the number of clusters is 3. Keeping this in mind we will explore cluster solutions for 3 clusters. This will help us determine if there are indeed five natural groups in the data set or if there are only three natural groups.
+
+#### K-Means with 5 clusters 
+
+```{r}
+set.seed(9)
+Ksol1 <- kmeans(scale(reducedGroupData[, -c(56)]), centers = 5) 
+#list(Ksol1)
+#Ksol1$centers
+```
+
+This helps to scale the data which is essential for running the K-means method because this method is scale invariant. Different clustering solutions could result from clustering the raw data and the standardized data. Therefore, it is always better to scale and standardize the observations before running the K-Means method. 
+
+```{r}
+tally(Ksol1$cluster ~ Class, data = reducedGroupData, format = "count")
+```
+
+The tally function above compares the cluster each observation belongs to, to the actual class of the observation. The tally function shows that the K-means method does a decent job of recovering clusters according to cancer type. Cluster 5 seems to have observations that only belong to KIRC and only two KIRC cancer type observations do not belong to cluster 1. Similarly, cluster 3 only has observations that belong to the cancer type LUAD and there are only four observations that are of the LUAD cancer type that do not belong to cluster 3. However, clusters 1, 2 and 4 seem to be problematic because they are unable to recover clusters according to cancer type. Cluster 4 has observations that belong to four cancer types and clusters all the BRCA and COAD cancer types in one cluster. Therefore, through the K-means clustering solution we would be unable to naturally group the BRCA and COAD cancer types. Furthermore, clusters 1 and 2 both identify observations that belong the PRAD cancer type. Ideally, we would have liked cluster 1 and 2 to be one large cluster if we wanted to recover cancer types. However, these observations could suggest that BRCA and COAD cancer types are extremely similar and form a natural group while there are two types of PRAD cancer. However, we will have to investigate further if this is actually the case.
+
+```{r}
+set.seed(10)
+kmeansPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+#kmeansPCA$loadings[, 1:2]
+ggplot(kmeansPCA, aes(x = kmeansPCA$scores[,1], y = kmeansPCA$scores[,2], color = reducedGroupData$Class)) + geom_text(label = Ksol1$cluster)
+```
+
+To get a general sense of how well separated the natural groups recovered by the K-means method were, we viewed the clustering solution in the PCA space. The problems for the K-means clustering solution that were addressed in the previous paragraph can be visualized in the Principal Component (PC) space. The observations on the top right show the overlap between cluster 1 and 2. The observations for cluster 2 seem to be on average plotted above the observations for cluster 1, which could suggest that there are indeed to natural groupings. Clusters 3,4 and 5 are relatively distinct, but we can see two large groupings of cluster 4, one above cluster 3 and one to the left of cluster 3. This could be because cluster 4 recovered both the BRCA and COAD cancer types.
+
+```{r}
+set.seed(10)
 gene.dist <- dist(reducedGroupData[, -c(56)])
 ```
 
+Before, we proceed with the silhouette plot for K-Means we need to calculate a distance matrix. There are many way to calculate the distance between pairs of observations, and in this case we use the Euclidean measure. This distance matrix is also extremely important for the hierarchical clustering methods we will run later. 
+
+
+
 ```{r}
+set.seed(10)
+kmeanssilh <- silhouette(Ksol1$cluster, gene.dist)
+summary(kmeanssilh)
+plot(kmeanssilh)
+```
+
+A silhouette plot determines how well an observation fits the cluster it belongs to. A silhouette value closer to one indicates that the observations best fit their own cluster while a silhouette value next to -1 means that the observation best fits the second closest cluster.
+Looking at the average silhouette widths for the observations in all the clusters, as expected, we see that cluster 5 and cluster 3 have the highest average silhouette widths of 0.74 and 0.54. This shows that the k-means clustering solution's groupings for cluster 5 and cluster 3 were the best compared to the other clusters. Cluster 1 had an average silhouette value that was close to 0, which could suggest cluster 1 was not required all together, with all the observations from cluster 1 ideally in cluster 2 to recover the PRAD cancer type. 
+
+The average silhouette plot for all five clusters was 0.46. This is a decent silhouette value, but we would ideally like a silhouette value that is closer to 1. 
+
+
+#### K-Means with 3 clusters 
+
+As we did for the K-means clustering solution for five clusters, we repeated a similar procure for our K-means clustering solution with 3 clusters. Although we knew there were five cancer types, as explained above, the scree plot had an evident elbow at 3. Hence, we looked at a 3 cluster solution to see if there were actually only three natural groupings, possibly because the gene expressions for a few cancer types were similar to one another. 
+
+```{r}
+set.seed(8888)
+Ksol2 <- kmeans(scale(reducedGroupData[, -c(56)]), centers = 3) 
+#list(Ksol2)
+#Ksol2$centers
+```
+
+Like we did for the 5 cluster solution, we once again scaled our dataset. 
+
+
+```{r}
+tally(Ksol2$cluster ~ Class, data = reducedGroupData, format = "count")
+```
+
+
+```{r}
+set.seed(10)
+kmeansPCA2 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+#kmeansPCA2$loadings[, 1:2]
+ggplot(kmeansPCA2, aes(x = kmeansPCA2$scores[,1], y = kmeansPCA2$scores[,2], color = reducedGroupData$Class)) + geom_text(label = Ksol2$cluster)
+```
+
+We knew that there were five cluster types and if the goal was to cluster the observation by the cluster type the three cluster solution would not do a great job. Hence, expectedly, the tally function comparing the clustering solution with three clusters to the original cancer types and the colored PCA indicate that three cluster solution did not do a great job of recovering the underlying natural groups. The PCA shows that there were about three distinct clusters that were all grouped in cluster 2. The K-means three cluster solution did a good job of grouping KIRC and LUAD cancer types. However, looking at the PC space the PC scores some of the observations in cluster 2 were not even similar. There were some observations in cluster 2 with higher PC1 and PC2 scores, as shown on the top right of the plot. Therefore, we did not think this clustering solution did a good job of identifying the natural groups. 
+
+```{r}
+set.seed(10)
+kmeanssilh2 <- silhouette(Ksol2$cluster, gene.dist)
+summary(kmeanssilh2)
+plot(kmeanssilh2)
+```
+
+The silhouette plot above is further evidence for the fact that the 3 clusters solution did not work well. Cluster 2 had an average silhouette value that was close to 0.28, as expected from the PC scores plot. Cluster 1 and 3 had average silhouette values of 0.76 and 0.59 respectively that were relatively good but the average silhouette width for the clustering solution was 0.41. Ideally, we would have liked an average silhouette width that was closer to 1. Therefore, the relatively smaller silhouette width suggests that the K-Means clustering solution with three clusters was not extremely appropriate.  
+
+
+###Single Linkage  
+
+K-Means was a non-hierarchical clustering method, while the next method we tried, single linkage, is a hierarchical clustering method. Hierarchical clustering consists of a series of partitions that may run from a single “cluster” containing all individuals to n clusters, each containing a single individual. Agglomerative hierarchical clustering techniques produce partitions by a series of successive fusions of the n individuals into groups. All hierarchical clustering techniques finally reduce the data into one large cluster, we need to decide the number of clusters to retain in the solution. 
+
+In single linkage, the distance between clusters is the minimum between any two observations in the cluster. 
+
+```{r}
+set.seed(1)
 hcsingle <- hclust(gene.dist, method = "single")
 list(hcsingle)
 plot(hcsingle)
 ```
+
+The dendrogram above shows the solution for the single linkage solution. Because our data set includes so many observations, the dendrogram is extremely difficult to interpret. Therefore, based on the scree plot we had made for K-means, we decided to explore the single linkage solution with 3 and 5 clusters.  
 
 ```{r}
 singleSol<- (cutree(hcsingle, k = 5))
 summary(as.factor(singleSol))
 ```
 
+The tally function above shows that the five cluster solution for single linkage has 136 observations grouped in cluster 1, 519 observations grouped in cluster 2 and 144 observations in cluster 3. Cluster 4 and 5 have only one observation each. Single linkage is particularly good for identifying outliers and therefore the two observations in cluster 4 and 5 could potentially be outliers. 
 
 ```{r}
 tally(singleSol ~ Class, format = "count", data = reducedGroupData)
@@ -109,86 +251,150 @@ tally(singleSol ~ Class, format = "count", data = reducedGroupData)
 
 
 ```{r}
-singlePCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
-<<<<<<< HEAD
-=======
+set.seed(10)
 singlePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
->>>>>>> 2319fc6df64b7fbe1a0b8721c95ff5f3c7a1a56b
-plot(singlePCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Single Five cluster solution") #blank!
-text(singlePCA$scores[, 1:2], labels = singleSol, cex = 0.6)
-singlePCA$loadings[, 1:2]
+#singlePCA$loadings[, 1:2]
+ggplot(singlePCA, aes(x = kmeansPCA$scores[,1], y = singlePCA$scores[,2], color = reducedGroupData$Class)) + geom_text(label = singleSol)
 ```
-Problems with single include that it tends to have long stringy clusters, as shown here. This is a classic example of chaining. However, single linkage is helpful in finding extreme outliers. 
 
+Similar to how we analysed the K-means clustering solutions, we used the tally functions and a PCA to explore the single linkage solutions. Because there were 5 cancer types, we would have hoped to recover five clusters, with each cluster grouping observations from a certain cancer type. However, the single linkage solution could only identify three natural groups. Looking at the tally function, cluster 1 had observations only of the PRAD cancer type and all PRAD cancer types were only in cluster 1. Similarly, cluster 3 grouped all the observations for the KIRC cancer type. Two observations, that were of the KIRC cancer type were grouped in separately in cluster 4 and cluster 5. However, looking at those particular points on the PCA space, they did seem to be quite a distance away from the grouping of cluster 3. Therefore, the single linkage solution has correctly grouped these two points as potential outliers. The single linkage fails to recover the natural groups belonging to the COAD, LUAD and BRCA cancer types. It groups all three cancer types in cluster 2. Looking at PCA, the three cancer types are grouped close together on the bottom right. This could suggest that these three cancer types had similar gene expressions. 
 
-Complete linkage - 
 
 ```{r}
+set.seed(10)
+singlesilh<- silhouette(singleSol, gene.dist)
+summary(singlesilh)
+plot(singlesilh)
+```
+
+The silhouette plot confirms our findings from the tally table and the PCA. Cluster 1 and cluster 3 have high average silhouette widths, while cluster two has a lower silhouette width. Clusters  4 and 5, that have only one observation have silhouette values of 0 which indicates that they do not best fit their own cluster not to they best fit the second closest cluster. Therefore, they are outliers. The average silhouette width for the plot is 0.41. We would ideally like a value closer to 1.
+ 
+Next we will look at a single linkage solution with three clusters. 
+
+```{r}
+set.seed(10)
+singleSol1<- (cutree(hcsingle, k = 3))
+summary(as.factor(singleSol1))
+```
+
+The tally function above shows that the three cluster solution for single linkage has 655 observations grouped in cluster 1, 145 observations grouped in cluster 2 and 1 observations in cluster 3. The sole observation belonging to cluster three could be an outlier. 
+```{r}
+tally(singleSol1 ~ Class, format = "count", data = reducedGroupData)
+```
+
+```{r}
+set.seed(10)
+singlePCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+#singlePCA1$loadings[, 1:2]
+ggplot(singlePCA1, aes(x = singlePCA1$scores[,1], y = singlePCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = singleSol1)
+```
+
+Looking at the tally function table and the PCA we notice that the 3 cluster solution failed to distinguish between the natural groups on the top right and bottom right of the PC space. Like in the 5 cluster single linkage solution, the cancer types of LUAD, COAD and BRCA were grouped together, but this time even PRAD was grouped included in the cluster to make cluster 1 have 655 observations. Cluster 2 only had observations of the KIRC cancer type which could suggest that this cancer type had gene expressions which were completely different than the four cancer types. Additionally, we noticed that the one observation that belonged to cluster 3 was also an outlier in our five cluster single linkage solution.
+
+
+```{r}
+set.seed(10)
+singlesilh2 <- silhouette(singleSol1, gene.dist)
+summary(singlesilh2)
+plot(singlesilh2)
+```
+
+The average silhouette width of cluster 2 is not bad at 0.69 however the average silhouette width of cluster 1 is only 0.14. The overall average silhouette width of 0.24 is further evidence for the fact that our three cluster single linkage solution did not do a good job of identifying the underlying clusters. The most important takeaway however from this plot is that the one observation in cluster 3 has an silhouette value of 0, indicating that it neither best fits its own cluster not its second closest cluster. Therefore, this observation could probably be an outlier. 
+
+###Complete linkage - 
+
+The next clustering method we tried was complete linkage. Similar to single linkage, complete linkage is also a hierarchical clustering method. However, in complete linkage the distance between clusters is the maximum between any two observations in the cluster. We still use the same distance matrix that was created in our single linkage solution. 
+
+```{r}
+set.seed(115)
 hccomp <- hclust(gene.dist, method = "complete")
 list(hccomp)
 plot(hccomp)
 ```
+
+
+Once again, just like the case of single linkage, the dendrogram above shows the solution for the complete linkage solution. Because our data set includes so many observations, the dendrogram is extremely difficult to interpret. Therefore, based on the scree plot we had made for K-means, we decided to explore the complete linkage solution with 3 and 5 clusters.  
 
 ```{r}
 compSol<- (cutree(hccomp, k = 5))
 summary(as.factor(compSol))
 ```
 
+The tally table above shows that the number of observations grouped in each cluster of the five cluster solution. An observation we made was that the number of observations in each cluster closely resembles the tally table at the beginning of the project, when we looked at the number of observations of each cancer type. For example, there were 300 observations for BRCA and cluster 3 has 311 observations and there were 78 observations for COAD and cluster 5 has 78 members. Because of this close resemblance in the size of the clusters to the number of observations of each cancer type, complete linkage could potentially be the best clustering method yet. 
+
 ```{r}
 tally(compSol ~ Class, format = "count", data = reducedGroupData)
 ```
 
-Complete looks much better than single linkage. Clusters well spread out. Complete linkage gives clustrers of similar diameter. Hence, this solution looks better than the single linkage. 
-
-
-
 ```{r}
-compPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
-plot(compPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Complete Linkage's Five cluster solution") #blank!
-text(compPCA$scores[, 1:2], labels = compSol, cex = 0.6)
-compPCA$loadings[, 1:2]
+set.seed(10)
+completePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+#completePCA$loadings[, 1:2]
+ggplot(completePCA, aes(x = completePCA$scores[,1], y = completePCA$scores[,2], color = reducedGroupData$Class)) + geom_text(label = compSol)
 ```
 
-
+The tally table and the PCA backs up our claim of complete linkage being the clustering method yet. Cluster 1 only has observations of the PRAD cancer type and all the PRAD cancer types belong to cluster 1. Similarly, cluster 2 groups almost all the LUAD, cluster 3 mostly has BRCA observations and clusters 4 and 5 group KIRC and COAD cancer types. There were a few observations that are in cluster 3 but actually are of the COAD, KIRK and LUAD cancer types. However, the complete linkage solution fails to group only 11 observations by cancer type. Therefore, the complete linkage 5 cluster solution suggests that the underlying natural groups were by cancer type. 
 
 ```{r}
-compsil <- silhouette(compSol, gene.dist)
-summary(compsil)
-plot(compsil)
+set.seed(10)
+compsilh <- silhouette(compSol, gene.dist)
+summary(compsilh)
+plot(compsilh)
 ```
 
+The silhouette plot back ups our evaluation of the tally table and PCA. All the clusters have relatively higher average silhouette widths compared to the other clustering methods. The average silhouette width for the whole solution was 0.65 which was greater than K-means and single linkage. This higher silhouette value validates our claim that complete linkage for five clusters is the best clustering solution yet. 
 
-Average Linkage - 
+As we did for the other clustering methods, we will investigate the the 3 cluster complete linkage solution. 
+
 ```{r}
-hcavg <- hclust(gene.dist, method = "average")
-list(hcavg)
-plot(hcavg)
+set.seed(10)
+compSol1<- (cutree(hccomp, k = 3))
+summary(as.factor(compSol1))
+```
+The tally table above shows that for the 3 cluster complete linkage solution there were 136 observations in cluster 1, 523 observations cluster 2 and 142 observations in cluster 3. 
+ 
+```{r}
+tally(compSol1 ~ Class, format = "count", data = reducedGroupData)
+```
+ 
+ 
+```{r}
+set.seed(10)
+compPCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+#compPCA1$loadings[, 1:2]
+ggplot(compPCA1, aes(x = compPCA1$scores[,1], y = compPCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = compSol1)
 ```
 
-
+Looking at the PCA, the complete linkage three cluster solution does a good job of finding the underlying natural groups. The cancer types of KIRC and PRAD seem to be distinct and from our previous analyses we have seen that BRCA, COAD and LUAD could have similar gene expressions. There could be a few concerns about the few observations that actually were of the KIRC cancer that were grouped in cluster 2, however these points were already identified as potential outliers and this should not be a major concern. 
+ 
 ```{r}
-avgSol<- (cutree(hcavg, k = 5))
-summary(as.factor(avgSol))
+set.seed(10)
+compsilh2 <- silhouette(compSol1, gene.dist)
+summary(compsilh2)
+plot(compsilh2)
 ```
 
+The average silhouette width of cluster 1 and 3 which recovered the PRAD and KIRC cancer types respectively have the highest average silhouette width co-efficents, even greater than the complete linkage with five clusters. Therefore, the three cluster solution does a particular good job of recovering these clusters. However, the average silhouette width for the entire solution is 0.52, lower than the complete linkage for five clusters because the average silhouette width for cluster 2 is 0.42. This could suggest that the five cluster solution is needed and the natural underlying groups are based on cancer type. Therefore, proceeding to our next method, Ward's solution, we will only look at a solution with five clusters. 
+
+
+###Wards Solution - 
+
+Ward's solution is another hierarchical clustering method. 
 
 ```{r}
-tally(avgSol ~ Class, format = "count", data = reducedGroupData)
-```
-Compromise between average and single linkage. Cluster 3 is shockingly very small. 
-
-Wards Solution - 
-
-```{r}
+set.seed(2)
 hcward <- hclust(gene.dist, method = "ward.D")
 list(hcward)
 plot(hcward)
 ```
 
+Once again because the sheer number of observations made it very difficult to interpret the dendrogram. 
+
 ```{r}
 wardSol<- (cutree(hcward, k = 5))
 summary(as.factor(wardSol))
 ```
+Like we had done for the other clustering methods we made a tally table to see how many observations each cluster had. Just like in complete linkage, the Ward's solution strongly resembled for five clusters strongly resembled the tally table at the beginning of the project, when we looked at the number of observations of each cancer type. In fact when we looked more closely at the values, the Ward's solution matched the original tally table more than the complete linkage solution. 
 
 ```{r}
 tally(wardSol ~ Class, format = "count", data = reducedGroupData)
@@ -196,119 +402,25 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 
 
 ```{r}
-wardPCA <- princomp(reducedGroupData[, -c(56)], cor = TRUE)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution")
-wardPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
->>>>>>> 2319fc6df64b7fbe1a0b8721c95ff5f3c7a1a56b
-plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") #blank!
-=======
-plot(wardPCA$scores[, 1:2], type = "n", xlab = "PC1", ylab = "PC2", main = "Ward's Five cluster solution") 
->>>>>>> 8966d527dc9e9329de67cc0a6418073e34d139f8
-text(wardPCA$scores[, 1:2], labels = wardSol, cex = 0.6)
-wardPCA$loadings[, 1:2]
-
-ggplot(wardPCA, aes(x = wardPCA$scores[, 1], y = wardPCA$scores[, 2], color = reducedGroupData$Class)) +
-  geom_text(label = wardSol)
+wardPCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
+#wardPCA1$loadings[, 1:2]
+ggplot(wardPCA1, aes(x = wardPCA1$scores[,1], y = wardPCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = wardSol)
 ```
 
-<<<<<<< HEAD
-=======
+Like we had done for all the aforementioned methods we made a tally table and ran a PCA. The results for the Ward's solution were almost identical to the results for the five cluster complete linkage solution. Infact the Ward's solution did a better job of recovering the LUAD cancer type. In the complete linkage solution there were 6 LUAD observations that were grouped in cluster 3 instead while in the Ward's solution there was only 1 LUAD observation in cluster 3. The Ward's solution grouped 795 out of 801 observations by their correct cancer type. 
 
->>>>>>> 8966d527dc9e9329de67cc0a6418073e34d139f8
+
 ```{r}
 wardsil <- silhouette(wardSol, gene.dist)
 summary(wardsil)
 plot(wardsil)
 ```
 
-
-Hagnes - 
-
-
-```{r}
-hagnes <- agnes(reducedGroupData[, -c(56)], diss = FALSE, stand = TRUE)
-plot(hagnes, which = 2)
-plot(hagnes, which = 1) 
-```
+The average silhouette widths for the Ward's solution and the complete linkage solution were also extremely similar. Only cluster had a lower average silhouette width which brought the average silhouette width down. This could be due to the fact that the identified outliers were grouped in cluster two instead cluster 4 where they actually belong. Overall, the average silhouette width of the Ward's solution was 0.64 which is almost the same as the average silhouette width of 0.65 for the complete linkage five cluster solution. Because the average silhouette width's were so similar and the ward's solution correctly grouped a few more observations by cancer type, we decided that the Ward's solution was the best clustering method to recover the underlying natural groups. 
 
 
 
-K means - 
 
-```{r}
-set.seed(9)
-wss <- rep(0, 12) 
-for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(56)]), centers = i)$withinss)}                   
-plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares")
-```
-
-We know that there are five classes, however looking for an elbow in the scree plot above we would like to see solutions based 5 clusters as expected.  
-
-
-```{r}
-Ksol1 <- kmeans(scale(reducedGroupData[, -c(56)]), centers = 5) 
-#list(Ksol1)
-Ksol1$centers
-```
-
-```{r}
-tally(Ksol1$cluster ~ Class, data = reducedGroupData, format = "count")
-```
-
-```{r}
-tally(Ksol1$cluster ~ wardSol, format = "count")
-```
-
-```{r}
-kmeanssilh <- silhouette(Ksol1$cluster, gene.dist)
-summary(kmeanssilh)
-plot(kmeanssilh)
-```
-<<<<<<< HEAD
-
-
-
-```{r}
-Ksol2 <- kmeans(scale(reducedGroupData[, -c(56)]), centers = 3) 
-#list(Ksol1)
-Ksol2$centers
-```
-
-
-```{r}
-tally(Ksol2$cluster ~ Class, data = reducedGroupData, format = "count")
-```
-
-```{r}
-tally(Ksol2$cluster ~ wardSol, format = "count")
-```
-
-```{r}
-kmeanssilh2 <- silhouette(Ksol2$cluster, gene.dist)
-summary(kmeanssilh2)
-plot(kmeanssilh2)
-```
-
-<<<<<<< HEAD
-=======
->>>>>>> 8966d527dc9e9329de67cc0a6418073e34d139f8
-
-Centroid - 
-
-```{r}
-set.seed(100)
-centroid <- cclust(scale(reducedGroupData[, -c(56)]), k = 5, save.data = TRUE)
-stripes(centroid, type = "first") 
-stripes(centroid, type = "second") 
-stripes(centroid, type = "all")
-```
-
-```{r}
-tally(centroid ~ Class, data = reducedGroupData, format = "count")
-```
 
 
 Comparing Clustering and Classification - 
