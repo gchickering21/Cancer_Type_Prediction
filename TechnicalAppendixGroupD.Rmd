@@ -37,7 +37,8 @@ cancerData3 <- readRDS("cancer3.rda")
 cancerData4 <- readRDS("cancer4.rda")
 cancerData5 <- readRDS("cancer5.rda")
 
-groupddata <- data.frame(rbind(cancerData, cancerData2, cancerData3, cancerData4, cancerData5))
+groupddata <- data.frame(rbind(cancerData, cancerData2, 
+                               cancerData3, cancerData4, cancerData5))
 groupddata$Class <- as.factor(groupddata$Class)
 ```
 
@@ -50,27 +51,29 @@ Columns 2:20532 are genes
 
 ```{r}
 #head(groupddata)
-#unique(groupddata$Class)
-#tally(~ Class, data = groupddata)
+unique(groupddata$Class)
+tally(~ Class, data = groupddata)
 ```
 
 ### Distribution analysis of gene expression
 
+Because there were so many genes, we needed to take a sample in order to do our preliminary analysis. Below, we sample 5 genes and compare their distributions. 
+
 ```{r, message=FALSE}
-#set.seed(17)
-#sampleData <- groupddata[ , c(sample(ncol(groupddata), 5),20533)]
+set.seed(17)
+sampleData <- groupddata[ , c(sample(ncol(groupddata), 5),20533)]
 
 #checking the overall distributions of the sampled genes
-#favstats(gene_3182 ~ Class, data = sampleData) # checking the distribution of one of the genes by class
+favstats(gene_3182 ~ Class, data = sampleData) # distribution of a gene by class
 
-#ggpairs(sampleData[,-c(6)], mapping=ggplot2::aes(colour = sampleData$Class))
+ggpairs(sampleData[,-c(6)], mapping=ggplot2::aes(colour = sampleData$Class))
 ```
 
-### Feature Reduction
-
-Feature Extraction
+### Feature Selection
 
 ** This takes about 10 minutes to run! **
+
+Below, we run our full dataset through our feature selection process using Bonferroni adjustment.
 
 ```{r, cache = TRUE}
 pvals <- rep(1, 20530) #creating the list to be populated with p-values
@@ -119,7 +122,8 @@ The K-means clustering technique partitions the data into a pre-specified number
 set.seed(9)
 wss <- rep(0, 12) 
 for(i in 1:12){wss[i] <- sum(kmeans(scale(reducedGroupData[, -c(56)]), centers = i)$withinss)}                   
-plot(1:12, wss, type = "b", xlab = "Number of groups", ylab = "Within groups sum of squares", main = "Scree Plot for K-means ") 
+plot(1:12, wss, type = "b", xlab = "Number of groups", 
+     ylab = "Within groups sum of squares", main = "Scree Plot for K-means ") 
 
 ```
 
@@ -146,7 +150,10 @@ The tally function above compares the cluster each observation belongs to, to th
 set.seed(10)
 kmeansPCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #kmeansPCA$loadings[, 1:2]
-ggplot(kmeansPCA, aes(x = kmeansPCA$scores[,1], y = kmeansPCA$scores[,2], color = reducedGroupData$Class)) + geom_text(label = Ksol1$cluster)
+ggplot(kmeansPCA, aes(x = kmeansPCA$scores[,1], 
+                      y = kmeansPCA$scores[,2], 
+                      color = reducedGroupData$Class)) + 
+  geom_text(label = Ksol1$cluster)
 ```
 
 To get a general sense of how well separated the natural groups recovered by the K-means method were, we viewed the clustering solution in the PCA space. The problems for the K-means clustering solution that were addressed in the previous paragraph can be visualized in the Principal Component (PC) space. The observations on the top right show the overlap between cluster 1 and 2. The observations for cluster 2 seem to be on average plotted above the observations for cluster 1, which could suggest that there are indeed to natural groupings. Clusters 3,4 and 5 are relatively distinct, but we can see two large groupings of cluster 4, one above cluster 3 and one to the left of cluster 3. This could be because cluster 4 recovered both the BRCA and COAD cancer types.
@@ -196,7 +203,10 @@ tally(Ksol2$cluster ~ Class, data = reducedGroupData, format = "count")
 set.seed(10)
 kmeansPCA2 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #kmeansPCA2$loadings[, 1:2]
-ggplot(kmeansPCA2, aes(x = kmeansPCA2$scores[,1], y = kmeansPCA2$scores[,2], color = reducedGroupData$Class)) + geom_text(label = Ksol2$cluster)
+ggplot(kmeansPCA2, aes(x = kmeansPCA2$scores[,1], 
+                       y = kmeansPCA2$scores[,2], 
+                       color = reducedGroupData$Class)) + 
+  geom_text(label = Ksol2$cluster)
 ```
 
 We knew that there were five cluster types and if the goal was to cluster the observation by the cluster type the three cluster solution would not do a great job. Hence, expectedly, the tally function comparing the clustering solution with three clusters to the original cancer types and the colored PCA indicate that three cluster solution did not do a great job of recovering the underlying natural groups. The PCA shows that there were about three distinct clusters that were all grouped in cluster 2. The K-means three cluster solution did a good job of grouping KIRC and LUAD cancer types. However, looking at the PC space the PC scores some of the observations in cluster 2 were not even similar. There were some observations in cluster 2 with higher PC1 and PC2 scores, as shown on the top right of the plot. Therefore, we did not think this clustering solution did a good job of identifying the natural groups. 
@@ -242,7 +252,10 @@ tally(singleSol ~ Class, format = "count", data = reducedGroupData)
 set.seed(10)
 singlePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #singlePCA$loadings[, 1:2]
-ggplot(singlePCA, aes(x = kmeansPCA$scores[,1], y = singlePCA$scores[,2], color = reducedGroupData$Class)) + geom_text(label = singleSol)
+ggplot(singlePCA, aes(x = kmeansPCA$scores[,1], 
+                      y = singlePCA$scores[,2], 
+                      color = reducedGroupData$Class)) + 
+  geom_text(label = singleSol)
 ```
 
 Similar to how we analysed the K-means clustering solutions, we used the tally functions and a PCA to explore the single linkage solutions. Because there were 5 cancer types, we would have hoped to recover five clusters, with each cluster grouping observations from a certain cancer type. However, the single linkage solution could only identify three natural groups. Looking at the tally function, cluster 1 had observations only of the PRAD cancer type and all PRAD cancer types were only in cluster 1. Similarly, cluster 3 grouped all the observations for the KIRC cancer type. Two observations, that were of the KIRC cancer type were grouped in separately in cluster 4 and cluster 5. However, looking at those particular points on the PCA space, they did seem to be quite a distance away from the grouping of cluster 3. Therefore, the single linkage solution has correctly grouped these two points as potential outliers. The single linkage fails to recover the natural groups belonging to the COAD, LUAD and BRCA cancer types. It groups all three cancer types in cluster 2. Looking at PCA, the three cancer types are grouped close together on the bottom right. This could suggest that these three cancer types had similar gene expressions. 
@@ -274,7 +287,10 @@ tally(singleSol1 ~ Class, format = "count", data = reducedGroupData)
 set.seed(10)
 singlePCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #singlePCA1$loadings[, 1:2]
-ggplot(singlePCA1, aes(x = singlePCA1$scores[,1], y = singlePCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = singleSol1)
+ggplot(singlePCA1, aes(x = singlePCA1$scores[,1], 
+                       y = singlePCA1$scores[,2], 
+                       color = reducedGroupData$Class)) + 
+  geom_text(label = singleSol1)
 ```
 
 Looking at the tally function table and the PCA we notice that the 3 cluster solution failed to distinguish between the natural groups on the top right and bottom right of the PC space. Like in the 5 cluster single linkage solution, the cancer types of LUAD, COAD and BRCA were grouped together, but this time even PRAD was grouped included in the cluster to make cluster 1 have 655 observations. Cluster 2 only had observations of the KIRC cancer type which could suggest that this cancer type had gene expressions which were completely different than the four cancer types. Additionally, we noticed that the one observation that belonged to cluster 3 was also an outlier in our five cluster single linkage solution.
@@ -318,7 +334,10 @@ tally(compSol ~ Class, format = "count", data = reducedGroupData)
 set.seed(10)
 completePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #completePCA$loadings[, 1:2]
-ggplot(completePCA, aes(x = completePCA$scores[,1], y = completePCA$scores[,2], color = reducedGroupData$Class)) + geom_text(label = compSol)
+ggplot(completePCA, aes(x = completePCA$scores[,1], 
+                        y = completePCA$scores[,2], 
+                        color = reducedGroupData$Class)) + 
+  geom_text(label = compSol)
 ```
 
 The tally table and the PCA backs up our claim of complete linkage being the clustering method yet. Cluster 1 only has observations of the PRAD cancer type and all the PRAD cancer types belong to cluster 1. Similarly, cluster 2 groups almost all the LUAD, cluster 3 mostly has BRCA observations and clusters 4 and 5 group KIRC and COAD cancer types. There were a few observations that are in cluster 3 but actually are of the COAD, KIRK and LUAD cancer types. However, the complete linkage solution fails to group only 11 observations by cancer type. Therefore, the complete linkage 5 cluster solution suggests that the underlying natural groups were by cancer type. 
@@ -350,7 +369,10 @@ tally(compSol1 ~ Class, format = "count", data = reducedGroupData)
 set.seed(10)
 compPCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #compPCA1$loadings[, 1:2]
-ggplot(compPCA1, aes(x = compPCA1$scores[,1], y = compPCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = compSol1)
+ggplot(compPCA1, aes(x = compPCA1$scores[,1], 
+                     y = compPCA1$scores[,2], 
+                     color = reducedGroupData$Class)) + 
+  geom_text(label = compSol1)
 ```
 
 Looking at the PCA, the complete linkage three cluster solution does a good job of finding the underlying natural groups. The cancer types of KIRC and PRAD seem to be distinct and from our previous analyses we have seen that BRCA, COAD and LUAD could have similar gene expressions. There could be a few concerns about the few observations that actually were of the KIRC cancer that were grouped in cluster 2, however these points were already identified as potential outliers and this should not be a major concern. 
@@ -392,7 +414,10 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 ```{r}
 wardPCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #wardPCA1$loadings[, 1:2]
-ggplot(wardPCA1, aes(x = wardPCA1$scores[,1], y = wardPCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = wardSol)
+ggplot(wardPCA1, aes(x = wardPCA1$scores[,1], 
+                     y = wardPCA1$scores[,2], 
+                     color = reducedGroupData$Class)) + 
+  geom_text(label = wardSol)
 ```
 
 Like we had done for all the aforementioned methods we made a tally table and ran a PCA. The results for the Ward's solution were almost identical to the results for the five cluster complete linkage solution. Infact the Ward's solution did a better job of recovering the LUAD cancer type. In the complete linkage solution there were 6 LUAD observations that were grouped in cluster 3 instead while in the Ward's solution there was only 1 LUAD observation in cluster 3. The Ward's solution grouped 795 out of 801 observations by their correct cancer type. 
@@ -405,17 +430,6 @@ plot(wardsil)
 ```
 
 The average silhouette widths for the Ward's solution and the complete linkage solution were also extremely similar. Only cluster had a lower average silhouette width which brought the average silhouette width down. This could be due to the fact that the identified outliers were grouped in cluster two instead cluster 4 where they actually belong. Overall, the average silhouette width of the Ward's solution was 0.64 which is almost the same as the average silhouette width of 0.65 for the complete linkage five cluster solution. Because the average silhouette width's were so similar and the ward's solution correctly grouped a few more observations by cancer type, we decided that the Ward's solution was the best clustering method to recover the underlying natural groups. 
-
-
-
-
-
-
-Comparing Clustering and Classification - 
-
-```{r}
-tally(wardSol ~ cancerRandomForest$predicted, format = "count")
-```
 
 
 # Classification
@@ -436,7 +450,8 @@ tally(~ Class, data = reducedGroupData, format = "count")
 set.seed(220)
 sampleData <- reducedGroupData[ , sample(ncol(reducedGroupData)-1, 25)]
 protein_matrix<- data.matrix(reducedGroupData)
-protein_heatmap <- heatmap(protein_matrix, Rowv=NA, Colv=NA, col = cm.colors(256), scale="column", main="HeatMap of all Protein Variables")
+protein_heatmap <- heatmap(protein_matrix, Rowv=NA, Colv=NA, col = cm.colors(256), 
+                           scale="column", main="HeatMap of all Protein Variables")
 ```
 
 
@@ -445,7 +460,8 @@ protein_heatmap <- heatmap(protein_matrix, Rowv=NA, Colv=NA, col = cm.colors(256
 This was the best tree we could create when changing the different input parameters of minsplit, minbucket, and xval. We found that this gave us an AER of 0.37%, which means the tree created splits that classified almost every observation perfectly.
 ```{r,fig.height = 7, eval=FALSE}
 g.control <- rpart.control(minsplit = 10, minbucket = 5, xval = 0)
-g.treeorig <- rpart(Class ~ ., data = reducedGroupData, method = "class", control = g.control)
+g.treeorig <- rpart(Class ~ ., data = reducedGroupData, 
+                    method = "class", control = g.control)
 plot(g.treeorig)
 text(g.treeorig, cex = 0.7)
 printcp(g.treeorig)
@@ -455,7 +471,8 @@ printcp(g.treeorig)
  This is the same tree but running a jackknife cross validation approach in order to obtain a TER.
 ```{r, fig.height = 7, eval=TRUE}
 g.control2 <- rpart.control(minsplit = 10, minbucket = 5, xval = 801)
-g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , method = "class", control = g.control2)
+g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , 
+                     method = "class", control = g.control2)
 printcp(g.treeorig2)
 plotcp(g.treeorig2)
 plot(g.treeorig2)
@@ -465,7 +482,8 @@ text(g.treeorig2, cex = 0.7)
 Same original tree but running a 10 fold cross validation technique. 
 ```{r, fig.height = 7, eval=TRUE}
 g.control2 <- rpart.control(minsplit = 10, minbucket = 5, xval = 10)
-g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , method = "class", control = g.control2)
+g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , 
+                     method = "class", control = g.control2)
 printcp(g.treeorig2)
 plotcp(g.treeorig2)
 plot(g.treeorig2)
@@ -483,7 +501,9 @@ The best random forest model we could create was one with the input parameters o
 
 ```{r}
 set.seed(240)
-cancerRandomForest <- randomForest(Class ~ ., data = reducedGroupData, mtry = 10, ntree = 100, importance = T, proximity = T)
+cancerRandomForest <- randomForest(Class ~ ., data = reducedGroupData, 
+                                   mtry = 10, ntree = 100, 
+                                   importance = T, proximity = T)
 cancerRandomForest
 table(reducedGroupData$Class, predict(cancerRandomForest, groupddata))
 gf_histogram(~ treesize(cancerRandomForest))
@@ -538,7 +558,7 @@ summary(group.boost2)
 
 This code is to determine which variable was the one that is the most influential. Although the calculation may not be exactly the same as how the relative influence plot calculates their exact number of "relative influence", from the this output we can see that gene_7964 appears to be the gene that has the highest influence. From looking at the output we can see that gene_7964 has a value of 236.20, which is far and away the largest value for the data set. 
 ```{r}
-(round(relative.influence(group.boost, n.trees=5000), 2 ))
+sort(round(relative.influence(group.boost2, n.trees=5000), 2 ),decreasing = TRUE)[0:10]
 ```
 
 Although this is already discussed above for this gene, we will repeat the findings for the 
