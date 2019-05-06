@@ -1,29 +1,28 @@
 ---
-title: "Analysis"
+title: "Technical Apendix"
 author: "Group D"
-date: "4/22/2019"
+date: "5/6/2019"
 output: pdf_document
 ---
 
-
-```{r}
-library(randomForest)
+```{r setup, include=FALSE}
+library(mosaic)
+library(readr)
+options(digits = 6)
+library(rpart) # for classification trees
+library(class) # for kNN methods
+library(randomForest) # for random forests
+library(GGally)
+library(partykit)
+library(gbm)
+library(e1071) #may need to be installed
 library(cluster)
 library(lattice)
 library(flexclust)
-library(mosaic) 
 library(ggfortify)
 ```
 
-
-```{r, include=FALSE}
-library(mosaic)
-library(readr)
-```
-
-Our project is about predicting cancer types based on RNA expressions.
-
-### Data Sources
+### Data Source
 
 Our data source is the UCI Machine Learning Repo. The original data comes in as two files (samples with gene expressions and the labels for each sample). We combined these two datasets into one large set called "cancer.csv".
 
@@ -417,4 +416,134 @@ Comparing Clustering and Classification -
 ```{r}
 tally(wardSol ~ cancerRandomForest$predicted, format = "count")
 ```
+
+
+# Classification
+
+```{r}
+dim(reducedGroupData)
+tally(~ Class, data = reducedGroupData, format = "count")
+#ggpairs(reducedGroupData, columns = 1:9, ggplot2::aes(color = Class))
+```
+
+
+```{r, eval = FALSE}
+sapply(1:55,function(x) favstats(~reducedGroupData[,x])) #favstats by variable fast
+#if you see something interesting, run favstats alone to make it easier to read
+cor(reducedGroupData[,-c(56)])
+```
+
+
+Tree Method
+
+```{r,fig.height = 7, eval=FALSE}
+g.control <- rpart.control(minsplit = 10, minbucket = 5, xval = 0)
+g.treeorig <- rpart(Class ~ ., data = reducedGroupData, method = "class", control = g.control)
+plot(g.treeorig)
+text(g.treeorig, cex = 0.7)
+printcp(g.treeorig)
+#summary(g.treeorig) #only turn on if you really want it
+```
+Tree #2
+```{r, fig.height = 7, eval=TRUE}
+g.control2 <- rpart.control(minsplit = 10, minbucket = 5, xval = 801)
+g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , method = "class", control = g.control2)
+printcp(g.treeorig2)
+plotcp(g.treeorig2)
+plot(g.treeorig2)
+text(g.treeorig2, cex = 0.7)
+```
+
+```{r, fig.height = 7, eval=TRUE}
+g.control2 <- rpart.control(minsplit = 10, minbucket = 5, xval = 10)
+g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , method = "class", control = g.control2)
+printcp(g.treeorig2)
+plotcp(g.treeorig2)
+plot(g.treeorig2)
+text(g.treeorig2, cex = 0.7)
+```
+
+
+##code if we want to prune the trees
+```{r, eval=FALSE}
+g.prunetree <- prune.rpart(g.treeorig2, cp = 0.014493, parms = list(split = "information"), control = g.control2)
+printcp(g.prunetree)
+plot(g.prunetree)
+text(g.prunetree)
+```
+
+#Random Forest
+```{r}
+set.seed(240)
+cancerRandomForest <- randomForest(Class ~ ., data = reducedGroupData, mtry = 10, ntree = 100, importance = T, proximity = T)
+cancerRandomForest
+table(reducedGroupData$Class, predict(cancerRandomForest, groupddata))
+```
+
+
+##Boosting Procedure
+
+##Create Holdout Approach
+```{r}
+#setup
+set.seed(240)
+group_train <- reducedGroupData %>% sample_frac(0.75) 
+tally(~ Class, group_train)
+group_test <- reducedGroupData %>% setdiff(group_train)
+tally(~Class, data=group_test)
+```
+
+
+```{r}
+set.seed(240)
+group.boost <- gbm(Class ~ ., data = group_train, distribution = "multinomial", 
+                   n.trees = 5000, interaction.depth = 3, shrinkage = 0.1)
+summary(group.boost)
+boost_estimate <- predict(group.boost, newdata = group_test, 
+                         n.trees = 5000, type = "response")
+pred_group <- apply(boost_estimate, 1, which.max)
+tally(~ pred_group)
+table(group_test$Class, pred_group)
+```
+
+```{r}
+round(relative.influence(group.boost, n.trees=5000), 2 )
+
+# density distribution of most important predictor
+gf_dens( ~ gene_7964, color = ~ Class, data = reducedGroupData)  %>%
+  gf_labs(title = "Density Distribution of Most Influential Gene by Class")
+```
+
+#KNN approach
+```{r}
+##This is to get AER
+g.knn <- knn(group_train[,-56], group_train[,-56], group_train$Class, k = 4, prob = T)
+table(group_train$Class, g.knn)
+temptable <-table(group_train$Class, g.knn)
+tempsum <- as.numeric(sum(as.matrix(temptable)) - sum(diag(as.matrix(temptable))))
+tempsum/(sum(as.matrix(temptable)))
+
+```
+##Might need to check this over
+```{r}
+##This is to get TER
+g.knn <- knn(group_train[,-56], group_test[,-56], group_train$Class, k = 4, prob = T)
+table(group_test$Class, g.knn)
+temptable <-table(group_test$Class, g.knn)
+tempsum <- as.numeric(sum(as.matrix(temptable)) - sum(diag(as.matrix(temptable))))
+tempsum/(sum(as.matrix(temptable)))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
