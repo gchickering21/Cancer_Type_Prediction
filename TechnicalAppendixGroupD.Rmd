@@ -101,8 +101,6 @@ reducedGroupData$Class <- as.factor(reducedGroupData$Class)
 
 ##Clustering Analysis 
 
-
-
 The table below shows that the number of observations that belonged to each cancer type in our reduced data set. 
 ```{r}
 tally(~Class, data = reducedGroupData, format = "count")
@@ -110,8 +108,6 @@ tally(~Class, data = reducedGroupData, format = "count")
 
 
 The general idea of clustering is to find groups in the data that are homogeneous with themselves and distinct from each other. Specifically, for this project, our clustering analysis allowed us to explore natural groupings in the gene expressions for each cancer type. From the exploratory analysis we know that there were five cancer types of “PRAD”, “LUAD”, “BRCA”, “KIRC” and “COAD” which would suggest that the data set had five natural groupings.Therefore, we began our clustering analysis expecting to find five cancer type groupings but were open to finding clustering solutions with a different number of natural groupings. We examined several clustering methods and by using trial and error looked for the best clustering solution. 
-
-
 
 
 ###K means
@@ -452,7 +448,7 @@ Our best method is going to end up being the random forest approach.
 
 ##Preliminary Analysis for Classification
 
-Here we are just getting a sense of the sizes of each of the five classes.
+Here we are just getting a sense of the sizes of each of the five classes. Here we can see that BRCA is the largest class with 300 observations and that COAD is the smallest class with 78 observations.
 ```{r}
 dim(reducedGroupData)
 tally(~ Class, data = reducedGroupData, format = "count")
@@ -525,7 +521,7 @@ varImpPlot(cancerRandomForest)
 ```
 
 From the random forest output we could see that there appeared to be two main variables that determined splits, which were gene_7964 and gene_7896. When looking at gene_7964 density plot by class, we can see that the variable gene_7964 has clear separations for four out of the five classes. We can see that based on the value of the different observations, there are clear separations besides for the "LUAD" class.
-When looking at the the variable gene_7896 we can see that there only appears to be clear separations for one of the classes, and with three more of the classes being clearly separated. From the plot we can see that "COAD" is very separated whereas "BRCA" and "PRAD" have some separation and some overlap. We can also see that "KIRC" and "LUAD" have some areas of separation but are for the most part very overlapped with one another. Since these were the two main influential variables, this indicates that between the two variables the random forest was likely able to find very clear splits between all the classes except "LUAD". Although there is potentially other variables in the data set that have more clear separations for the "LUAD" class, based on these two main variable this is the one class that may have potentially may have some misclassifications.
+When looking at the the variable gene_7896 we can see that there appears to be some separations for four out of the five classes again. From the plot we can see that "COAD" is very separated whereas "BRCA" and "PRAD" have some separation and some overlap. We can also see that "KIRC" and "LUAD" have some areas of separation but are for the most part very overlapped with one another. Since these were the two main influential variables, this indicates that between the two variables the random forest was likely able to find very clear splits between all the classes except potentially "LUAD". Although there is potentially other variables in the data set that have more clear separations for the "LUAD" class, based on these two main variable this is the one class that may have potentially may have some misclassifications.
 ```{r}
 ggplot(reducedGroupData) + geom_density(aes(x = gene_7964, color = Class))
 ggplot(reducedGroupData) + geom_density(aes(x = gene_7896, color = Class))
