@@ -420,22 +420,29 @@ tally(wardSol ~ cancerRandomForest$predicted, format = "count")
 
 # Classification
 
+Our best method is going to end up being the random forest approach.
+
+##Preliminary Analysis for Classification
+
+Here we are just getting a sense of the sizes of each of the five classes.
 ```{r}
 dim(reducedGroupData)
 tally(~ Class, data = reducedGroupData, format = "count")
 #ggpairs(reducedGroupData, columns = 1:9, ggplot2::aes(color = Class))
 ```
 
-
+ While we were curious as to if there would be any particular pattern for the variables in the reducedGroupData dataset, the output is showing that there is no distinguishable pattern to the variables.
 ```{r, eval = FALSE}
-sapply(1:55,function(x) favstats(~reducedGroupData[,x])) #favstats by variable fast
-#if you see something interesting, run favstats alone to make it easier to read
-cor(reducedGroupData[,-c(56)])
+set.seed(220)
+sampleData <- reducedGroupData[ , sample(ncol(reducedGroupData)-1, 25)]
+protein_matrix<- data.matrix(reducedGroupData)
+protein_heatmap <- heatmap(protein_matrix, Rowv=NA, Colv=NA, col = cm.colors(256), scale="column", main="HeatMap of all Protein Variables")
 ```
 
 
-Tree Method
+## Tree Method
 
+This was the best tree we could create when changing the different input parameters of minsplit, minbucket, and xval. We found that this gave us an AER of 0.37%, which means the tree created splits that classified almost every observation perfectly.
 ```{r,fig.height = 7, eval=FALSE}
 g.control <- rpart.control(minsplit = 10, minbucket = 5, xval = 0)
 g.treeorig <- rpart(Class ~ ., data = reducedGroupData, method = "class", control = g.control)
@@ -444,7 +451,8 @@ text(g.treeorig, cex = 0.7)
 printcp(g.treeorig)
 #summary(g.treeorig) #only turn on if you really want it
 ```
-Tree #2
+
+ This is the same tree but running a jackknife cross validation approach in order to obtain a TER.
 ```{r, fig.height = 7, eval=TRUE}
 g.control2 <- rpart.control(minsplit = 10, minbucket = 5, xval = 801)
 g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , method = "class", control = g.control2)
@@ -454,6 +462,7 @@ plot(g.treeorig2)
 text(g.treeorig2, cex = 0.7)
 ```
 
+Same original tree but running a 10 fold cross validation technique. 
 ```{r, fig.height = 7, eval=TRUE}
 g.control2 <- rpart.control(minsplit = 10, minbucket = 5, xval = 10)
 g.treeorig2 <- rpart(Class ~ ., data =reducedGroupData , method = "class", control = g.control2)
@@ -463,27 +472,36 @@ plot(g.treeorig2)
 text(g.treeorig2, cex = 0.7)
 ```
 
+From the tree methods, the best model we could create was that original tree with the AER of 0.37% and a TER of 2.2%, which was obtained via the jackknife cross validation approach. We can also see that the final tree is not overly complicated and is very easy to follow to interpret which class an observation belongs to.
+Although this is not the best model for the data set, it still shows that the tree method still works extremely well for the data. 
 
-##code if we want to prune the trees
-```{r, eval=FALSE}
-g.prunetree <- prune.rpart(g.treeorig2, cp = 0.014493, parms = list(split = "information"), control = g.control2)
-printcp(g.prunetree)
-plot(g.prunetree)
-text(g.prunetree)
-```
+#Random Forest Section
 
-#Random Forest
+-This ends up being our best method based on the TER and AER
+
+The best random forest model we could create was one with the input parameters of mtry=10 and ntree=100. This model gives us an AER of 0% and a TER of 0.5%. We can also see that there was two main variables, gene_7964 and gene_7896 that appeared to be the most influential variables for the Forest. From the histogram we can see that the majority of trees had between 10 and 13 splits. This implies that the trees in the forests were more complicated and had more splits than the best tree model we found, but this is something we would expect because we are only passing in a subset of all the potential predictor variables at each split. This means that the RF method was able to create rules that was able to classify the test set almost completely and worked extremely well on the data set.
+
 ```{r}
 set.seed(240)
 cancerRandomForest <- randomForest(Class ~ ., data = reducedGroupData, mtry = 10, ntree = 100, importance = T, proximity = T)
 cancerRandomForest
 table(reducedGroupData$Class, predict(cancerRandomForest, groupddata))
+gf_histogram(~ treesize(cancerRandomForest))
+varImpPlot(cancerRandomForest)
+```
+
+From the random forest output we could see that there appeared to be two main variables that determined splits, which were gene_7964 and gene_7896. When looking at gene_7964 density plot by class, we can see that the variable gene_7964 has clear separations for four out of the five classes. We can see that based on the value of the different observations, there are clear separations besides for the "LUAD" class.
+When looking at the the variable gene_7896 we can see that there only appears to be clear separations for one of the classes, and with three more of the classes being clearly separated. From the plot we can see that "COAD" is very separated whereas "BRCA" and "PRAD" have some separation and some overlap. We can also see that "KIRC" and "LUAD" have some areas of separation but are for the most part very overlapped with one another. Since these were the two main influential variables, this indicates that between the two variables the random forest was likely able to find very clear splits between all the classes except "LUAD". Although there is potentially other variables in the data set that have more clear separations for the "LUAD" class, based on these two main variable this is the one class that may have potentially may have some misclassifications.
+```{r}
+ggplot(reducedGroupData) + geom_density(aes(x = gene_7964, color = Class))
+ggplot(reducedGroupData) + geom_density(aes(x = gene_7896, color = Class))
 ```
 
 
 ##Boosting Procedure
 
-##Create Holdout Approach
+This is to create Holdout Samples that contained a 75% - 25% split from data set in order to be used in future methods.
+We can see that the there was enough observations in both the test and training set for each of the training classes to allow us to proceed with analysis.
 ```{r}
 #setup
 set.seed(240)
@@ -493,57 +511,66 @@ group_test <- reducedGroupData %>% setdiff(group_train)
 tally(~Class, data=group_test)
 ```
 
-
+This is to get the AER for our best boosting model. We end up getting an AER of 0% which means the boosting model created rules that grouped all the observations in the training set perfectly into their correct classes.
 ```{r}
 set.seed(240)
-group.boost <- gbm(Class ~ ., data = group_train, distribution = "multinomial", 
+group.boost2 <- gbm(Class ~ ., data = group_train, distribution = "multinomial", 
                    n.trees = 5000, interaction.depth = 3, shrinkage = 0.1)
-summary(group.boost)
-boost_estimate <- predict(group.boost, newdata = group_test, 
+#summary(group.boost2)
+boost_estimate2 <- predict(group.boost2, newdata = group_train, 
+                         n.trees = 5000, type = "response")
+pred_group2 <- apply(boost_estimate2, 1, which.max)
+tally(~ pred_group2)
+table(group_train$Class, pred_group2)
+```
+
+This was to obtain the TER for the model as well as to find the most influential variables in determining splits. We can see that the TER was equal to 2%, which shows that the model still classified all but 4 of the observations in the test set into the appropriate class. We also see from the relative influence plot that there appears to be one variable that was the most influential in determining splits within the trees. 
+```{r}
+set.seed(240)
+boost_estimate <- predict(group.boost2, newdata = group_test, 
                          n.trees = 5000, type = "response")
 pred_group <- apply(boost_estimate, 1, which.max)
 tally(~ pred_group)
 table(group_test$Class, pred_group)
+summary(group.boost2)
 ```
 
+
+This code is to determine which variable was the one that is the most influential. Although the calculation may not be exactly the same as how the relative influence plot calculates their exact number of "relative influence", from the this output we can see that gene_7964 appears to be the gene that has the highest influence. From looking at the output we can see that gene_7964 has a value of 236.20, which is far and away the largest value for the data set. 
 ```{r}
-round(relative.influence(group.boost, n.trees=5000), 2 )
-
-# density distribution of most important predictor
-gf_dens( ~ gene_7964, color = ~ Class, data = reducedGroupData)  %>%
-  gf_labs(title = "Density Distribution of Most Influential Gene by Class")
+(round(relative.influence(group.boost, n.trees=5000), 2 ))
 ```
 
-#KNN approach
+Although this is already discussed above for this gene, we will repeat the findings for the 
+By looking at the density plot by class for the most influential variable, gene_7964, we can see that the variable has clear separations for four out of the five classes. We can see that based on the value of the different observations, there are clear separations besides for the "LUAD" class.
+```{r}
+ggplot(reducedGroupData) + geom_density(aes(x = gene_7964, color = Class))
+```
+
+
+#KNN approach Method
+
+Our best KNN model was one that grouped the four closest observations together.
+This is to obtain the AER for our best KNN model. We can see that the AER was equal to 0%. which means that the model grouped all the observations in the training set perfectly. 
 ```{r}
 ##This is to get AER
-g.knn <- knn(group_train[,-56], group_train[,-56], group_train$Class, k = 4, prob = T)
+g.knn <- knn(group_train[,-56], group_train[,-56], group_train$Class, k = , prob = T)
 table(group_train$Class, g.knn)
 temptable <-table(group_train$Class, g.knn)
 tempsum <- as.numeric(sum(as.matrix(temptable)) - sum(diag(as.matrix(temptable))))
 tempsum/(sum(as.matrix(temptable)))
 
 ```
-##Might need to check this over
+
+This is to obtain the TER for our best KNN model, which was equal to 0.5%. This is showing that the rules that were created on the training set still worked extremely well on the test data set. 
 ```{r}
 ##This is to get TER
-g.knn <- knn(group_train[,-56], group_test[,-56], group_train$Class, k = 4, prob = T)
-table(group_test$Class, g.knn)
-temptable <-table(group_test$Class, g.knn)
+g.knn2 <- knn(group_train[,-56], group_test[,-56], group_train$Class, k = 4, prob = T)
+table(group_test$Class, g.knn2)
+temptable <-table(group_test$Class, g.knn2)
 tempsum <- as.numeric(sum(as.matrix(temptable)) - sum(diag(as.matrix(temptable))))
 tempsum/(sum(as.matrix(temptable)))
 
 ```
-
-
-
-
-
-
-
-
-
-
-
 
 
