@@ -154,6 +154,11 @@ ggplot(kmeansPCA, aes(x = kmeansPCA$scores[,1],
                       y = kmeansPCA$scores[,2], 
                       color = reducedGroupData$Class)) + 
   geom_text(label = Ksol1$cluster)
+ggplot(kmeansPCA, aes(x = kmeansPCA$scores[,1], 
+                      y = kmeansPCA$scores[,2], 
+                      color = reducedGroupData$Class)) + 
+  geom_text(label = Ksol1$cluster) + 
+  ggtitle("PCA for K-Means five cluster solution")
 ```
 
 To get a general sense of how well separated the natural groups recovered by the K-means method were, we viewed the clustering solution in the PCA space. The problems for the K-means clustering solution that were addressed in the previous paragraph can be visualized in the Principal Component (PC) space. The observations on the top right show the overlap between cluster 1 and 2. The observations for cluster 2 seem to be on average plotted above the observations for cluster 1, which could suggest that there are indeed to natural groupings. Clusters 3,4 and 5 are relatively distinct, but we can see two large groupings of cluster 4, one above cluster 3 and one to the left of cluster 3. This could be because cluster 4 recovered both the BRCA and COAD cancer types.
@@ -163,7 +168,7 @@ set.seed(10)
 gene.dist <- dist(reducedGroupData[, -c(56)])
 ```
 
-Before, we proceed with the silhouette plot for K-Means we need to calculate a distance matrix. There are many way to calculate the distance between pairs of observations, and in this case we use the Euclidean measure. This distance matrix is also extremely important for the hierarchical clustering methods we will run later. 
+Before, we proceed with the silhouette plot for K-Means we need to calculate a distance matrix. There are many ways to calculate the distance between pairs of observations, and in this case we use the Euclidean measure. This distance matrix is also extremely important for the hierarchical clustering methods we will run later. 
 
 
 
@@ -203,10 +208,14 @@ tally(Ksol2$cluster ~ Class, data = reducedGroupData, format = "count")
 set.seed(10)
 kmeansPCA2 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #kmeansPCA2$loadings[, 1:2]
+<<<<<<< HEAD
 ggplot(kmeansPCA2, aes(x = kmeansPCA2$scores[,1], 
                        y = kmeansPCA2$scores[,2], 
                        color = reducedGroupData$Class)) + 
   geom_text(label = Ksol2$cluster)
+=======
+ggplot(kmeansPCA2, aes(x = kmeansPCA2$scores[,1], y = kmeansPCA2$scores[,2], color = reducedGroupData$Class)) + geom_text(label = Ksol2$cluster) + ggtitle("PCA for K-Means three cluster solution")
+>>>>>>> 7b6767ce6aa78ff5747213b61766b94b43541fa1
 ```
 
 We knew that there were five cluster types and if the goal was to cluster the observation by the cluster type the three cluster solution would not do a great job. Hence, expectedly, the tally function comparing the clustering solution with three clusters to the original cancer types and the colored PCA indicate that three cluster solution did not do a great job of recovering the underlying natural groups. The PCA shows that there were about three distinct clusters that were all grouped in cluster 2. The K-means three cluster solution did a good job of grouping KIRC and LUAD cancer types. However, looking at the PC space the PC scores some of the observations in cluster 2 were not even similar. There were some observations in cluster 2 with higher PC1 and PC2 scores, as shown on the top right of the plot. Therefore, we did not think this clustering solution did a good job of identifying the natural groups. 
@@ -252,10 +261,14 @@ tally(singleSol ~ Class, format = "count", data = reducedGroupData)
 set.seed(10)
 singlePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #singlePCA$loadings[, 1:2]
+<<<<<<< HEAD
 ggplot(singlePCA, aes(x = kmeansPCA$scores[,1], 
                       y = singlePCA$scores[,2], 
                       color = reducedGroupData$Class)) + 
   geom_text(label = singleSol)
+=======
+ggplot(singlePCA, aes(x = kmeansPCA$scores[,1], y = singlePCA$scores[,2], color = reducedGroupData$Class)) + geom_text(label = singleSol) + ggtitle("PCA for Single Linkage five cluster solution")
+>>>>>>> 7b6767ce6aa78ff5747213b61766b94b43541fa1
 ```
 
 Similar to how we analysed the K-means clustering solutions, we used the tally functions and a PCA to explore the single linkage solutions. Because there were 5 cancer types, we would have hoped to recover five clusters, with each cluster grouping observations from a certain cancer type. However, the single linkage solution could only identify three natural groups. Looking at the tally function, cluster 1 had observations only of the PRAD cancer type and all PRAD cancer types were only in cluster 1. Similarly, cluster 3 grouped all the observations for the KIRC cancer type. Two observations, that were of the KIRC cancer type were grouped in separately in cluster 4 and cluster 5. However, looking at those particular points on the PCA space, they did seem to be quite a distance away from the grouping of cluster 3. Therefore, the single linkage solution has correctly grouped these two points as potential outliers. The single linkage fails to recover the natural groups belonging to the COAD, LUAD and BRCA cancer types. It groups all three cancer types in cluster 2. Looking at PCA, the three cancer types are grouped close together on the bottom right. This could suggest that these three cancer types had similar gene expressions. 
@@ -287,10 +300,14 @@ tally(singleSol1 ~ Class, format = "count", data = reducedGroupData)
 set.seed(10)
 singlePCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #singlePCA1$loadings[, 1:2]
+<<<<<<< HEAD
 ggplot(singlePCA1, aes(x = singlePCA1$scores[,1], 
                        y = singlePCA1$scores[,2], 
                        color = reducedGroupData$Class)) + 
   geom_text(label = singleSol1)
+=======
+ggplot(singlePCA1, aes(x = singlePCA1$scores[,1], y = singlePCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = singleSol1) + ggtitle("PCA for Single Linkage three cluster solution")
+>>>>>>> 7b6767ce6aa78ff5747213b61766b94b43541fa1
 ```
 
 Looking at the tally function table and the PCA we notice that the 3 cluster solution failed to distinguish between the natural groups on the top right and bottom right of the PC space. Like in the 5 cluster single linkage solution, the cancer types of LUAD, COAD and BRCA were grouped together, but this time even PRAD was grouped included in the cluster to make cluster 1 have 655 observations. Cluster 2 only had observations of the KIRC cancer type which could suggest that this cancer type had gene expressions which were completely different than the four cancer types. Additionally, we noticed that the one observation that belonged to cluster 3 was also an outlier in our five cluster single linkage solution.
@@ -334,10 +351,14 @@ tally(compSol ~ Class, format = "count", data = reducedGroupData)
 set.seed(10)
 completePCA <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #completePCA$loadings[, 1:2]
+<<<<<<< HEAD
 ggplot(completePCA, aes(x = completePCA$scores[,1], 
                         y = completePCA$scores[,2], 
                         color = reducedGroupData$Class)) + 
   geom_text(label = compSol)
+=======
+ggplot(completePCA, aes(x = completePCA$scores[,1], y = completePCA$scores[,2], color = reducedGroupData$Class)) + geom_text(label = compSol) + ggtitle("PCA for Complete Linkage five cluster solution")
+>>>>>>> 7b6767ce6aa78ff5747213b61766b94b43541fa1
 ```
 
 The tally table and the PCA backs up our claim of complete linkage being the clustering method yet. Cluster 1 only has observations of the PRAD cancer type and all the PRAD cancer types belong to cluster 1. Similarly, cluster 2 groups almost all the LUAD, cluster 3 mostly has BRCA observations and clusters 4 and 5 group KIRC and COAD cancer types. There were a few observations that are in cluster 3 but actually are of the COAD, KIRK and LUAD cancer types. However, the complete linkage solution fails to group only 11 observations by cancer type. Therefore, the complete linkage 5 cluster solution suggests that the underlying natural groups were by cancer type. 
@@ -369,10 +390,14 @@ tally(compSol1 ~ Class, format = "count", data = reducedGroupData)
 set.seed(10)
 compPCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #compPCA1$loadings[, 1:2]
+<<<<<<< HEAD
 ggplot(compPCA1, aes(x = compPCA1$scores[,1], 
                      y = compPCA1$scores[,2], 
                      color = reducedGroupData$Class)) + 
   geom_text(label = compSol1)
+=======
+ggplot(compPCA1, aes(x = compPCA1$scores[,1], y = compPCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = compSol1) + ggtitle("PCA for Complete Linkage three cluster solution")
+>>>>>>> 7b6767ce6aa78ff5747213b61766b94b43541fa1
 ```
 
 Looking at the PCA, the complete linkage three cluster solution does a good job of finding the underlying natural groups. The cancer types of KIRC and PRAD seem to be distinct and from our previous analyses we have seen that BRCA, COAD and LUAD could have similar gene expressions. There could be a few concerns about the few observations that actually were of the KIRC cancer that were grouped in cluster 2, however these points were already identified as potential outliers and this should not be a major concern. 
@@ -414,10 +439,14 @@ tally(wardSol ~ Class, format = "count", data = reducedGroupData)
 ```{r}
 wardPCA1 <- princomp(reducedGroupData[, -c(1,56)], cor = TRUE)
 #wardPCA1$loadings[, 1:2]
+<<<<<<< HEAD
 ggplot(wardPCA1, aes(x = wardPCA1$scores[,1], 
                      y = wardPCA1$scores[,2], 
                      color = reducedGroupData$Class)) + 
   geom_text(label = wardSol)
+=======
+ggplot(wardPCA1, aes(x = wardPCA1$scores[,1], y = wardPCA1$scores[,2], color = reducedGroupData$Class)) + geom_text(label = wardSol) + ggtitle("PCA for Ward's method five cluster solution")
+>>>>>>> 7b6767ce6aa78ff5747213b61766b94b43541fa1
 ```
 
 Like we had done for all the aforementioned methods we made a tally table and ran a PCA. The results for the Ward's solution were almost identical to the results for the five cluster complete linkage solution. Infact the Ward's solution did a better job of recovering the LUAD cancer type. In the complete linkage solution there were 6 LUAD observations that were grouped in cluster 3 instead while in the Ward's solution there was only 1 LUAD observation in cluster 3. The Ward's solution grouped 795 out of 801 observations by their correct cancer type. 
